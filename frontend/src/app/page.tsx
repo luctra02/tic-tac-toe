@@ -2,17 +2,43 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
+
+const SOCKET_SERVER_URL = "http://localhost:3001";
 
 export default function Home() {
     const [roomID, setRoomID] = useState("");
+    const [socket, setSocket] = useState<Socket | null>(null);
+    const [playersOnline, setPlayersOnline] = useState(0);
+
+    useEffect(() => {
+        // Initialize socket connection
+        const socketConnection = io(SOCKET_SERVER_URL);
+
+        // Listen for online player updates
+        socketConnection.on("updateOnlinePlayers", (count) => {
+            setPlayersOnline(count);
+        });
+
+        setSocket(socketConnection);
+
+        // Cleanup on component unmount
+        return () => {
+            socketConnection.disconnect();
+        };
+    }, []);
 
     const handleCreateRoom = () => {
         console.log("Creating room...");
+        // Emit an event to create a room, if needed
+        socket?.emit("createRoom", roomID); // Use optional chaining to avoid errors if socket is null
     };
 
     const handleJoinRoom = () => {
         console.log("Joining room with ID:", roomID);
+        // Emit an event to join a room, if needed
+        socket?.emit("joinRoom", roomID); // Use optional chaining to avoid errors if socket is null
     };
 
     // Placeholder stats data
@@ -87,7 +113,7 @@ export default function Home() {
                     <div className="w-3 h-3 bg-green-500 rounded-full" />{" "}
                     {/* Simple green circle */}
                     <span className="text-lg font-semibold text-gray-800">
-                        Players Online: {stats.playersOnline}
+                        Players Online: {playersOnline}
                     </span>
                 </div>
             </div>
