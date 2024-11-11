@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import LoginButton from "@/components/LogInLogOutButton";
 
 const SOCKET_SERVER_URL = "http://localhost:3001";
 
@@ -80,9 +79,6 @@ export default function Home() {
                         />
                         <Button onClick={handleJoinRoom}>Join Room</Button>
                     </div>
-                </div>
-                <div className="mt-6">
-                    <LoginButton />
                 </div>
             </div>
 
