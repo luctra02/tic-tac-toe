@@ -1,122 +1,57 @@
-import {
-    Body,
-    Container,
-    Head,
-    Heading,
-    Html,
-    Preview,
-    Section,
-    Text,
-} from "@react-email/components";
-import * as React from "react";
-
-interface SupaAuthVerifyEmailProp {
-    verificationCode?: string;
+export default function generateVerifyEmailTemplate(otp: string): string {
+    return `
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 0;
+              background-color: #f9f9f9;
+              color: #333;
+              line-height: 1.6;
+            }
+            .container {
+              max-width: 600px;
+              margin: 20px auto;
+              padding: 20px;
+              background-color: #ffffff;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+              color: #4CAF50;
+              font-size: 24px;
+              text-align: center;
+            }
+            p {
+              margin: 10px 0;
+              font-size: 16px;
+            }
+            .otp {
+              font-size: 20px;
+              font-weight: bold;
+              color: #ff5722;
+              text-align: center;
+            }
+            .footer {
+              margin-top: 20px;
+              font-size: 12px;
+              text-align: center;
+              color: #777;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Verify Your Email</h1>
+            <p>To verify your email address, use the following code:</p>
+            <p class="otp">${otp}</p>
+            <p>If you did not request this, please ignore this email.</p>
+            <div class="footer">Thank you for using our service!</div>
+          </div>
+        </body>
+      </html>
+    `;
 }
-
-export default function SupaAuthVerifyEmail({
-    verificationCode = "596853",
-}: SupaAuthVerifyEmailProp) {
-    return (
-        <Html>
-            <Head />
-            <Preview>Supauth Email Verification</Preview>
-            <Body style={main}>
-                <Container style={container}>
-                    <Section style={coverSection}>
-                        <Section style={imageSection}></Section>
-                        <Section style={upperSection}>
-                            <Heading style={h1}>
-                                SupaAuth Verify your email address
-                            </Heading>
-                            <Text style={mainText}>
-                                {
-                                    "Thanks for starting the new account creation process. We want to make sure it's really you. Please enter the following verification code when prompted. If you don&apos;t want to create an account, you can ignore this message."
-                                }
-                            </Text>
-                            <Section style={verificationSection}>
-                                <Text style={verifyText}>
-                                    Verification code
-                                </Text>
-
-                                <Text style={codeText}>{verificationCode}</Text>
-                                <Text style={validityText}>
-                                    (This code is valid for 1 hour)
-                                </Text>
-                            </Section>
-                        </Section>
-                    </Section>
-                </Container>
-            </Body>
-        </Html>
-    );
-}
-
-const main = {
-    backgroundColor: "#fff",
-    color: "#212121",
-};
-
-const container = {
-    padding: "20px",
-    margin: "0 auto",
-    backgroundColor: "#eee",
-};
-
-const h1 = {
-    color: "#333",
-    fontFamily:
-        "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-    fontSize: "20px",
-    fontWeight: "bold",
-    marginBottom: "15px",
-};
-
-const text = {
-    color: "#333",
-    fontFamily:
-        "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-    fontSize: "14px",
-    margin: "24px 0",
-};
-
-const imageSection = {
-    backgroundColor: "#252f3d",
-    display: "flex",
-    padding: "20px 0",
-    alignItems: "center",
-    justifyContent: "center",
-};
-
-const coverSection = { backgroundColor: "#fff" };
-
-const upperSection = { padding: "25px 35px" };
-
-const verifyText = {
-    ...text,
-    margin: 0,
-    fontWeight: "bold",
-    textAlign: "center" as const,
-};
-
-const codeText = {
-    ...text,
-    fontWeight: "bold",
-    fontSize: "36px",
-    margin: "10px 0",
-    textAlign: "center" as const,
-};
-
-const validityText = {
-    ...text,
-    margin: "0px",
-    textAlign: "center" as const,
-};
-
-const verificationSection = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-};
-
-const mainText = { ...text, marginBottom: "14px" };

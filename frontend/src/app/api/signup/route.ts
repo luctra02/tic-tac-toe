@@ -1,5 +1,6 @@
 import supabaseAdmin from "@/lib/supabase/admin";
 import nodemailer from "nodemailer";
+import generateVerifyEmailTemplate from "@/emails";
 
 export async function POST(request: Request) {
   const data = await request.json();
@@ -21,17 +22,7 @@ export async function POST(request: Request) {
       },
     });
 
-	const htmlContent = `
-      <html>
-        <body>
-          <h1>Verify Your Email</h1>
-          <p>To verify your email address, use the following code:</p>
-          <p><strong>${res.data.properties.email_otp}</strong></p>
-          <p>If you did not request this, please ignore this email.</p>
-        </body>
-      </html>
-    `;
-
+    const htmlContent = generateVerifyEmailTemplate(res.data.properties.email_otp);
 
     const mailOptions = {
       from: `Acme <${process.env.GMAIL_USER}>`,
