@@ -1,6 +1,11 @@
 "use client";
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { CircleUser } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useUser from "@/app/hook/useUser";
@@ -43,10 +48,7 @@ export default function ManageProfile() {
             <DialogContent className=" w-full md:w-[55rem] flex flex-col sm:flex-row  ">
                 <div className=" w-60 h-[100%] rounded-s-lg p-5 space-y-7 ">
                     <div>
-                        <h1 className="text-2xl font-bold">Account</h1>
-                        <p className="text-sm dark:text-gray-300 ">
-                            Manage your account info.
-                        </p>
+                        <DialogTitle>Manage Profile</DialogTitle>
                     </div>
 
                     <div

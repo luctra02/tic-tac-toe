@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { IoMdSettings } from "react-icons/io";
 import { PiSignOutFill } from "react-icons/pi";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import useUser from "@/app/hook/useUser";
