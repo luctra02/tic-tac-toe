@@ -33,6 +33,14 @@ import { usePathname, useRouter } from "next/navigation";
 
 const FormSchema = z
     .object({
+        username: z
+            .string()
+            .min(3, { message: "Username must be at least 3 characters" })
+            .max(12, { message: "Username must not exceed 20 characters" })
+            .regex(
+                /^[a-zA-Z0-9_]+$/,
+                "Username can only contain letters, numbers, and underscores"
+            ),
         email: z.string().email({ message: "Invalid Email Address" }),
         password: z.string().min(6, { message: "Password is too short" }),
         "confirm-pass": z.string().min(6, { message: "Password is too short" }),
@@ -143,6 +151,26 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
                         }
                     )}
                 >
+                    <FormField
+                        control={form.control}
+                        name="username"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="font-semibold test-sm">
+                                    Username
+                                </FormLabel>
+                                <FormControl>
+                                    <Input
+                                        className="h-8"
+                                        placeholder="Enter a username"
+                                        type="text"
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage className="text-red-500" />
+                            </FormItem>
+                        )}
+                    />
                     <FormField
                         control={form.control}
                         name="email"

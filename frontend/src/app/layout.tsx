@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
+import QueryProvider from "@/components/query-provider";
 
 export const metadata: Metadata = {
     title: "TicTacToe",
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <body>{children}</body>
+            <body>
+                <QueryProvider>{children} </QueryProvider>
+            </body>
             <Toaster />
         </html>
     );

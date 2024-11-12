@@ -81,16 +81,18 @@ export default function Home() {
                         <Button onClick={handleJoinRoom}>Join Room</Button>
                     </div>
                 </div>
-                <div className="mt-6">
-                    <LoginButton />
-                </div>
+                <div className="mt-6"></div>
             </div>
 
             {/* Stats Panel */}
             <div className="hidden md:flex flex-col items-start justify-center w-1/3 p-8">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                    Player Stats
-                </h2>
+                <div className="flex justify-between w-full mb-4">
+                    <h2 className="text-2xl font-semibold text-gray-800">
+                        Player Stats
+                    </h2>
+                    {/* Place the LoginButton at the end of the row */}
+                    <LoginButton />
+                </div>
                 <div className="bg-white rounded-lg shadow-md p-4 w-full mb-4">
                     <ul className="space-y-4">
                         <li className="flex justify-between p-2 bg-gray-100 rounded-md">
