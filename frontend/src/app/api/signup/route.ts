@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 	if (res.data.properties?.email_otp) {
 		// resend email
 		const resendRes = await resend.emails.send({
-			from: `Acme <onboarding@example.com>`,
+			from: `Acme <onboarding@${process.env.RESEND_DOMAIN}>`,
 			to: [data.email],
 			subject: "Verify Email",
 			react: SupaAuthVerifyEmail({
