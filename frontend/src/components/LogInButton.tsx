@@ -33,7 +33,7 @@ const LoginButton = () => {
                     }}
                     className="w-full max-w-xs"
                 >
-                    Login
+                    Log in
                 </Button>
             )}
         </div>

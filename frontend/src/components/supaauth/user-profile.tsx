@@ -18,14 +18,13 @@ import Avatar from "./avatar";
 
 export default function UserProfile() {
     const [isSignOut, startSignOut] = useTransition();
-    const router = useRouter();
     const { data } = useUser();
 
     const signout = () => {
         startSignOut(async () => {
             const supabase = createSupabaseBrowser();
             await supabase.auth.signOut();
-            router.push("/logout");
+            window.location.href = "/";
         });
     };
 
@@ -75,7 +74,7 @@ export default function UserProfile() {
                                     ) : (
                                         <AiOutlineLoading3Quarters className="size-4 animate-spin" />
                                     )}
-                                    SignOut
+                                    Log out
                                 </Button>
                             </div>
                         </div>
