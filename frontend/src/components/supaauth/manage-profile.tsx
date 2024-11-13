@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -8,11 +8,15 @@ import {
 } from "@/components/ui/dialog";
 import { CircleUser } from "lucide-react";
 import { cn } from "@/lib/utils";
-import useUser from "@/app/hook/useUser";
 import { MdOutlineMarkEmailRead } from "react-icons/md";
 import { FaGithub, FaDiscord } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import Avatar from "./avatar";
+import { z } from "zod";
+import { toast } from "sonner";
+import { CiEdit } from "react-icons/ci";
+import { createSupabaseBrowser } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 export type IconKey = "email" | "github" | "discord" | "google";
 
@@ -33,12 +37,89 @@ export const authProvider = {
 
 export default function ManageProfile() {
     const [activeTab, setActiveTab] = useState("profile");
-    const { data } = useUser();
+    const [data, setData] = useState<User | null>(null);
+
+    const [isEditing, setIsEditing] = useState(false);
+
+    const supabase = createSupabaseBrowser();
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            setData(user);
+        };
+        fetchUser();
+    }, [supabase.auth]);
+
+    const [username, setUsername] = useState(data?.user_metadata.full_name);
+    const [currentName, setCurrentName] = useState(username);
+    useEffect(() => {
+        if (data?.user_metadata.full_name) {
+            setUsername(data.user_metadata.full_name);
+        }
+    }, [data?.user_metadata.full_name]);
 
     const AuthProviderIcon = data?.app_metadata?.provider
         ? authProvider[data.app_metadata.provider as IconKey]?.Icon ||
           MdOutlineMarkEmailRead
         : MdOutlineMarkEmailRead;
+
+    const usernameSchema = z
+        .string()
+        .min(3, { message: "Username must be at least 3 characters" })
+        .max(12, { message: "Username must not exceed 12 characters" })
+        .regex(
+            /^[a-zA-Z0-9_]+$/,
+            "Username can only contain letters, numbers, and underscores"
+        );
+
+    const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setUsername(e.currentTarget.value);
+    };
+
+    const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key == "Enter") {
+            // Check if the Enter key was pressed
+            const newUsername = e.currentTarget.value;
+
+            if (newUsername != currentName) {
+                try {
+                    usernameSchema.parse(newUsername);
+                    const {} = await supabase.auth.updateUser({
+                        data: { full_name: newUsername },
+                    });
+                    toast.success("Username updated successfully!");
+                    setCurrentName(newUsername);
+                    setIsEditing(false);
+                } catch (error) {
+                    if (error instanceof z.ZodError) {
+                        const errorMessage =
+                            error.errors[0]?.message || "Invalid username";
+                        toast.error(errorMessage);
+                    }
+                    setUsername(data?.user_metadata.full_name);
+                }
+            }
+        }
+    };
+
+    const handleEditClick = () => {
+        if (isEditing) {
+            // Simulate Enter key logic
+            const event = {
+                key: "Enter",
+                currentTarget: {
+                    value: username,
+                },
+            } as unknown as React.KeyboardEvent<HTMLInputElement>;
+
+            handleKeyDown(event);
+        }
+
+        setIsEditing(!isEditing);
+    };
 
     return (
         <Dialog>
@@ -72,6 +153,27 @@ export default function ManageProfile() {
                         <h1 className="text-sm font-medium w-36 ">Profile</h1>
                         <div className="flex-1 sm:px-3">
                             <Avatar />
+                        </div>
+                    </div>
+                    <div className="flex items-center sm:gap-24 py-5 justify-between ">
+                        <h1 className="text-sm font-medium w-36">Username</h1>
+                        <div className="flex-1 flex justify-between items-center sm:pl-3  ">
+                            {isEditing ? (
+                                <input
+                                    id="usernameInput"
+                                    type="text"
+                                    value={username}
+                                    onChange={handleUsernameChange}
+                                    onKeyDown={handleKeyDown}
+                                    className="border-2 rounded-md p-2 text-sm"
+                                />
+                            ) : (
+                                <p className="text-sm">{username}</p>
+                            )}
+                            <CiEdit
+                                className="cursor-pointer text-3xl"
+                                onClick={handleEditClick}
+                            />
                         </div>
                     </div>
                     <div className="flex items-center sm:gap-24 py-5 justify-between ">
