@@ -171,7 +171,7 @@ export default function ManageProfile() {
                                 <p className="text-sm">{username}</p>
                             )}
                             <CiEdit
-                                className="cursor-pointer text-3xl"
+                                className="cursor-pointer text-2xl"
                                 onClick={handleEditClick}
                             />
                         </div>
