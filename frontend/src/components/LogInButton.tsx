@@ -10,6 +10,7 @@ const LoginButton = () => {
     const router = useRouter();
     const supabase = createSupabaseBrowser();
 
+
     useEffect(() => {
         const fetchUser = async () => {
             const {
@@ -20,6 +21,7 @@ const LoginButton = () => {
         fetchUser();
     }, []);
 
+    
     return (
         <div className="flex items-center space-x-2">
             {user ? (

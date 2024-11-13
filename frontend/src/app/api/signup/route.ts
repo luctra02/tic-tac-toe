@@ -12,6 +12,19 @@ export async function POST(request: Request) {
     password: data.password,
   });
 
+  if (res.data.user) {
+    // Log the user information from the response
+    const { data: updatedUser, error } = await supabase.auth.admin.updateUserById(
+      res.data.user.id, // User's ID
+      {
+        user_metadata: { email: data.email, full_name: data.username } // Replace with the metadata you want to update
+      }
+    );
+  } else {
+    console.error("User creation error:", res.error);
+  }
+
+
   if (res.data.properties?.email_otp) {
     // create a transporter using nodemailer with Gmail SMTP
     const transporter = nodemailer.createTransport({
@@ -40,4 +53,5 @@ export async function POST(request: Request) {
   } else {
     return Response.json({ data: null, error: res.error });
   }
+  
 }

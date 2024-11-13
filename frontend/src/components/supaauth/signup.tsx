@@ -82,9 +82,11 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
     });
 
     const postEmail = async ({
+        username,
         email,
         password,
     }: {
+        username: string;
         email: string;
         password: string;
     }) => {
@@ -93,7 +95,7 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ username, email, password }),
         };
         // Send the POST request
         const res = await fetch("/api/signup", requestOptions);
@@ -103,6 +105,7 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
 
     const sendVerifyEmail = async (data: z.infer<typeof FormSchema>) => {
         const json = await postEmail({
+            username: data.username,
             email: data.email,
             password: data.password,
         });
