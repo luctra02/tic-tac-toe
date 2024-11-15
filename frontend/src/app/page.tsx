@@ -2,44 +2,46 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { useState } from "react";
+import { Socket } from "socket.io-client";
 import LoginButton from "@/components/LogInButton";
-
-const SOCKET_SERVER_URL = "http://localhost:3001";
+import { nanoid } from "nanoid";
+import { useRouter } from "next/navigation";
+import { useSocketContext } from "@/components/SocketProvider";
 
 export default function Home() {
+    const { playersOnline } = useSocketContext();
     const [roomID, setRoomID] = useState("");
     const [socket, setSocket] = useState<Socket | null>(null);
-    const [playersOnline, setPlayersOnline] = useState(0);
-
-    useEffect(() => {
-        // Initialize socket connection
-        const socketConnection = io(SOCKET_SERVER_URL);
-
-        // Listen for online player updates
-        socketConnection.on("updateOnlinePlayers", (count) => {
-            setPlayersOnline(count);
-        });
-
-        setSocket(socketConnection);
-
-        // Cleanup on component unmount
-        return () => {
-            socketConnection.disconnect();
-        };
-    }, []);
+    const router = useRouter();
 
     const handleCreateRoom = () => {
-        console.log("Creating room...");
-        // Emit an event to create a room, if needed
-        socket?.emit("createRoom", roomID); // Use optional chaining to avoid errors if socket is null
+        const newRoomID = nanoid(6); // Generate a 6-character ID
+        setRoomID(newRoomID);
+
+        socket?.emit("createRoom", newRoomID, () => {
+            // Redirect to the new room page
+            console.log(`Generated Room ID: ${newRoomID}`);
+        });
+        router.push(`/room/${newRoomID}`);
     };
 
     const handleJoinRoom = () => {
         console.log("Joining room with ID:", roomID);
-        // Emit an event to join a room, if needed
-        socket?.emit("joinRoom", roomID); // Use optional chaining to avoid errors if socket is null
+
+        // Emit event to join room
+        if (roomID) {
+            socket?.emit("joinRoom", roomID, (error) => {
+                if (error) {
+                    alert("Room not found or full"); // Handle error (e.g., room does not exist or is full)
+                } else {
+                    // Redirect to the room page
+                    router.push(`/room/${roomID}`);
+                }
+            });
+        } else {
+            alert("Please enter a room ID.");
+        }
     };
 
     // Placeholder stats data

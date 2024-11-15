@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import QueryProvider from "@/components/query-provider";
+import { SocketProvider } from "@/components/SocketProvider"; // Import the SocketProvider
 
 export const metadata: Metadata = {
     title: "TicTacToe",
@@ -16,7 +17,9 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
-                <QueryProvider>{children} </QueryProvider>
+                <QueryProvider>
+                    <SocketProvider>{children}</SocketProvider>
+                </QueryProvider>
             </body>
             <Toaster />
         </html>
