@@ -18,7 +18,6 @@ const rooms = {}; // Store room data (room ID -> list of player IDs)
 io.on("connection", (socket) => {
     onlinePlayers++;
     io.emit("updateOnlinePlayers", onlinePlayers);
-    console.log(`Player ${socket.id} connected`);
 
     // Handle room creation
     socket.on("createRoom", (roomID, callback) => {

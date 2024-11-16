@@ -8,6 +8,7 @@ import { Socket } from "socket.io-client";
 interface SocketContextType {
     socket: Socket | null; // Expose the socket instance
     playersOnline: number;
+    leaveRoom: (roomID: string) => void; // Add leaveRoom method to the context
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
@@ -15,8 +16,15 @@ const SocketContext = createContext<SocketContextType | undefined>(undefined);
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const { socket, playersOnline } = useSocket("http://localhost:3001");
 
+    // Leave room handler
+    const leaveRoom = (roomID: string) => {
+        if (socket) {
+            socket.emit("leaveRoom", roomID); // Emit custom leaveRoom event
+        }
+    };
+
     return (
-        <SocketContext.Provider value={{ socket, playersOnline }}>
+        <SocketContext.Provider value={{ socket, playersOnline, leaveRoom }}>
             {children}
         </SocketContext.Provider>
     );
