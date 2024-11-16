@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Socket } from "socket.io-client";
 import LoginButton from "@/components/LogInButton";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
@@ -12,8 +11,8 @@ import { useSocketContext } from "@/components/SocketProvider";
 export default function Home() {
     const { playersOnline } = useSocketContext();
     const [roomID, setRoomID] = useState("");
-    const [socket, setSocket] = useState<Socket | null>(null);
     const router = useRouter();
+    const { socket } = useSocketContext();
 
     const handleCreateRoom = () => {
         const newRoomID = nanoid(6); // Generate a 6-character ID
@@ -27,15 +26,14 @@ export default function Home() {
     };
 
     const handleJoinRoom = () => {
-        console.log("Joining room with ID:", roomID);
-
-        // Emit event to join room
+        // Check if the room ID is provided
         if (roomID) {
-            socket?.emit("joinRoom", roomID, (error) => {
+            // Emit event to join the room
+            socket?.emit("joinRoom", roomID, (error: string | undefined) => {
                 if (error) {
-                    alert("Room not found or full"); // Handle error (e.g., room does not exist or is full)
+                    // Display an error message if the room does not exist or is full
+                    alert(error); // Server sends a descriptive error message (e.g., "Room does not exist" or "Room is full")
                 } else {
-                    // Redirect to the room page
                     router.push(`/room/${roomID}`);
                 }
             });

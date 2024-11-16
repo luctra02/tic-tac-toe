@@ -1,11 +1,14 @@
-// frontend/src/app/room/[roomID]/page.tsx
+"use client";
 
-export default async function RoomPage({
-    params,
-}: {
-    params: { roomID: string };
-}) {
-    const { roomID } = await params; // Await the params object
+import { useSocketContext } from "@/components/SocketProvider";
+
+export default function RoomPage({ params }: { params: { roomID: string } }) {
+    // Access `roomID` directly since `params` are passed synchronously here
+    const { roomID } = params;
+
+    const { socket } = useSocketContext();
+    
 
     return <div>Welcome to Room {roomID}</div>;
+    
 }

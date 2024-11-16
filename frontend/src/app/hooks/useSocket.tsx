@@ -1,26 +1,27 @@
+// hooks/useSocket.ts
 "use client";
 
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 const useSocket = (url: string) => {
+    const [socket, setSocket] = useState<Socket | null>(null);
     const [playersOnline, setPlayersOnline] = useState(0);
 
     useEffect(() => {
-        const socket = io(url);
+        const socketConnection = io(url);
+        setSocket(socketConnection);
 
-        // Listen for updates
-        socket.on("updateOnlinePlayers", (count) => {
+        socketConnection.on("updateOnlinePlayers", (count) => {
             setPlayersOnline(count);
         });
 
-        // Cleanup
         return () => {
-            socket.disconnect();
+            socketConnection.disconnect();
         };
     }, [url]);
 
-    return { playersOnline };
+    return { socket, playersOnline };
 };
 
 export default useSocket;

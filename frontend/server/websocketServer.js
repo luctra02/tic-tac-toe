@@ -18,13 +18,20 @@ const rooms = {}; // Store room data (room ID -> list of player IDs)
 io.on("connection", (socket) => {
     onlinePlayers++;
     io.emit("updateOnlinePlayers", onlinePlayers);
+    console.log(`Player ${socket.id} connected`);
 
     // Handle room creation
     socket.on("createRoom", (roomID, callback) => {
         if (!rooms[roomID]) {
-            // Create the room if it doesn't exist
             rooms[roomID] = { players: [] };
-            console.log(`Room ${roomID} created`);
+
+            // Add the player to the room
+            rooms[roomID].players.push(socket.id);
+            socket.currentRoom = roomID; // Store the room ID in the socket object
+
+            console.log(
+                `Room ${roomID} created with players: ${rooms[roomID]}`
+            );
 
             // Broadcast that a new room was created
             io.emit("roomCreated", roomID);
@@ -32,7 +39,6 @@ io.on("connection", (socket) => {
             // Notify the client that the room was created
             callback();
         } else {
-            // If the room already exists, handle that case
             callback("Room already exists");
         }
     });
@@ -41,38 +47,66 @@ io.on("connection", (socket) => {
     socket.on("joinRoom", (roomID, callback) => {
         const room = rooms[roomID];
 
-        if (room && room.players.length < 2) {
-            // Add the player to the room if it's not full (assuming 2 players max per room)
-            room.players.push(socket.id);
-            console.log(`Player joined room ${roomID}`);
+        if (room) {
+            if (room.players.length < 2) {
+                room.players.push(socket.id); // Add the player to the room's players list
+                socket.currentRoom = roomID; // Store the room ID in the socket object
+                console.log(`Player ${socket.id} joined room ${roomID}`);
 
-            // Notify the client that they joined the room
-            callback();
-
-            // Optionally, broadcast the updated players in the room
-            io.to(roomID).emit("playerJoined", socket.id);
-        } else if (room && room.players.length >= 2) {
-            callback("Room is full");
+                callback(); // Notify the client of success
+                io.to(roomID).emit("playerJoined", socket.id); // Broadcast player join
+            } else {
+                callback("Room is full");
+            }
         } else {
             callback("Room does not exist");
         }
     });
 
-    // Handle player disconnection
-    socket.on("disconnect", () => {
-        onlinePlayers--;
-        io.emit("updateOnlinePlayers", onlinePlayers);
-
-        // Remove player from any room they were in
-        for (const roomID in rooms) {
-            const room = rooms[roomID];
-            const index = room.players.indexOf(socket.id);
-            if (index !== -1) {
-                room.players.splice(index, 1);
+    // Handle leaving a room
+    socket.on("leaveRoom", (roomID) => {
+        const room = rooms[roomID];
+        if (room) {
+            const playerIndex = room.players.indexOf(socket.id);
+            if (playerIndex !== -1) {
+                room.players.splice(playerIndex, 1);
+                console.log(`Player ${socket.id} left room ${roomID}`);
                 io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
-                break;
+            }
+
+            // Optionally clean up the room if it's empty
+            if (room.players.length === 0) {
+                delete rooms[roomID];
+                console.log(`Room ${roomID} deleted (no players left)`);
             }
         }
+
+        // No need to update `onlinePlayers` count unless a full disconnect happens
+    });
+
+    // Handle disconnection
+    socket.on("disconnect", () => {
+        const roomID = socket.currentRoom;
+        if (roomID) {
+            const room = rooms[roomID];
+            const playerIndex = room?.players.indexOf(socket.id);
+
+            if (playerIndex !== -1) {
+                room.players.splice(playerIndex, 1);
+                console.log(`Player ${socket.id} left room ${roomID}`);
+                io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
+            }
+
+            // Optionally, clean up if the room is empty
+            if (room && room.players.length === 0) {
+                delete rooms[roomID];
+                console.log(`Room ${roomID} deleted (no players left)`);
+            }
+        }
+
+        // Update global player count
+        onlinePlayers--;
+        io.emit("updateOnlinePlayers", onlinePlayers);
     });
 });
 

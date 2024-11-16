@@ -1,20 +1,22 @@
 // components/SocketProvider.tsx
-"use client"; // Ensures this is a client component
+"use client";
 
 import { createContext, useContext, ReactNode } from "react";
 import useSocket from "@/app/hooks/useSocket";
+import { Socket } from "socket.io-client";
 
 interface SocketContextType {
+    socket: Socket | null; // Expose the socket instance
     playersOnline: number;
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
-    const { playersOnline } = useSocket("http://localhost:3001"); // Your socket URL
+    const { socket, playersOnline } = useSocket("http://localhost:3001");
 
     return (
-        <SocketContext.Provider value={{ playersOnline }}>
+        <SocketContext.Provider value={{ socket, playersOnline }}>
             {children}
         </SocketContext.Provider>
     );
