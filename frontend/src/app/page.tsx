@@ -7,18 +7,24 @@ import LoginButton from "@/components/LogInButton";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useSocketContext } from "@/components/SocketProvider";
+import useUser from "@/app/hooks/useUser";
 
 export default function Home() {
-    const { playersOnline } = useSocketContext();
+    const { playersOnline, socket } = useSocketContext();
     const [roomID, setRoomID] = useState("");
     const router = useRouter();
-    const { socket } = useSocketContext();
+    const { data } = useUser();
+
+    const userProfile = {
+        name: data?.user_metadata?.full_name || "Guest",
+        avatar: data?.user_metadata?.avatar || null,
+    };
 
     const handleCreateRoom = () => {
         const newRoomID = nanoid(6); // Generate a 6-character ID
         setRoomID(newRoomID);
 
-        socket?.emit("createRoom", newRoomID, () => {
+        socket?.emit("createRoom", { roomID: newRoomID, userProfile }, () => {
             // Redirect to the new room page
             console.log(`Generated Room ID: ${newRoomID}`);
         });
@@ -29,14 +35,18 @@ export default function Home() {
         // Check if the room ID is provided
         if (roomID) {
             // Emit event to join the room
-            socket?.emit("joinRoom", roomID, (error: string | undefined) => {
-                if (error) {
-                    // Display an error message if the room does not exist or is full
-                    alert(error); // Server sends a descriptive error message (e.g., "Room does not exist" or "Room is full")
-                } else {
-                    router.push(`/room/${roomID}`);
+            socket?.emit(
+                "joinRoom",
+                { roomID: roomID, userProfile },
+                (error: string | undefined) => {
+                    if (error) {
+                        // Display an error message if the room does not exist or is full
+                        alert(error); // Server sends a descriptive error message (e.g., "Room does not exist" or "Room is full")
+                    } else {
+                        router.push(`/room/${roomID}`);
+                    }
                 }
-            });
+            );
         } else {
             alert("Please enter a room ID.");
         }

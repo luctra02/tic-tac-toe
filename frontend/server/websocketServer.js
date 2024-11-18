@@ -20,12 +20,14 @@ io.on("connection", (socket) => {
     io.emit("updateOnlinePlayers", onlinePlayers);
 
     // Handle room creation
-    socket.on("createRoom", (roomID, callback) => {
+    socket.on("createRoom", ({ roomID, userProfile }, callback) => {
+        console.log(roomID, userProfile);
         if (!rooms[roomID]) {
             rooms[roomID] = { players: [] };
+            console.log(rooms);
 
             // Add the player to the room
-            rooms[roomID].players.push(socket.id);
+            rooms[roomID].players.push({ id: socket.id, ...userProfile });
             socket.currentRoom = roomID; // Store the room ID in the socket object
 
             console.log(
@@ -43,17 +45,23 @@ io.on("connection", (socket) => {
     });
 
     // Handle joining a room
-    socket.on("joinRoom", (roomID, callback) => {
+    socket.on("joinRoom", ({ roomID, userProfile }, callback) => {
         const room = rooms[roomID];
 
         if (room) {
             if (room.players.length < 2) {
-                room.players.push(socket.id); // Add the player to the room's players list
+                // Add the player to the room's players list with their profile information
+                room.players.push({ id: socket.id, ...userProfile });
                 socket.currentRoom = roomID; // Store the room ID in the socket object
+
                 console.log(`Player ${socket.id} joined room ${roomID}`);
+                console.log(room);
 
                 callback(); // Notify the client of success
-                io.to(roomID).emit("playerJoined", socket.id); // Broadcast player join
+                io.to(roomID).emit("playerJoined", {
+                    id: socket.id,
+                    ...userProfile,
+                }); // Broadcast player join with profile data
             } else {
                 callback("Room is full");
             }
