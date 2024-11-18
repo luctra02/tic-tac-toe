@@ -21,10 +21,8 @@ io.on("connection", (socket) => {
 
     // Handle room creation
     socket.on("createRoom", ({ roomID, userProfile }, callback) => {
-        console.log(roomID, userProfile);
         if (!rooms[roomID]) {
             rooms[roomID] = { players: [] };
-            console.log(rooms);
 
             // Add the player to the room
             rooms[roomID].players.push({ id: socket.id, ...userProfile });
@@ -89,6 +87,16 @@ io.on("connection", (socket) => {
         }
 
         // No need to update `onlinePlayers` count unless a full disconnect happens
+    });
+
+    socket.on("getRoomUsers", (roomID, callback) => {
+        const room = rooms[roomID];
+        if (room) {
+            // Return the list of players in the room
+            callback(room.players);
+        } else {
+            callback([]); // Return an empty array if the room does not exist
+        }
     });
 
     // Handle disconnection

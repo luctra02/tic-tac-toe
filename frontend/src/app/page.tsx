@@ -16,7 +16,7 @@ export default function Home() {
     const { data } = useUser();
 
     const userProfile = {
-        name: data?.user_metadata?.full_name || "Guest",
+        full_name: data?.user_metadata?.full_name || "Guest",
         avatar: data?.user_metadata?.avatar || null,
     };
 
