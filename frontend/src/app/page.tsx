@@ -17,7 +17,7 @@ export default function Home() {
 
     const userProfile = {
         full_name: data?.user_metadata?.full_name || "Guest",
-        avatar: data?.user_metadata?.avatar || null,
+        avatar_url: data?.user_metadata?.avatar_url || null,
     };
 
     const handleCreateRoom = () => {
@@ -25,14 +25,11 @@ export default function Home() {
         setRoomID(newRoomID);
 
         socket?.emit("createRoom", { roomID: newRoomID, userProfile }, () => {
-            // Redirect to the new room page
-            console.log(`Generated Room ID: ${newRoomID}`);
+            router.push(`/room/${newRoomID}`);
         });
-        router.push(`/room/${newRoomID}`);
     };
 
     const handleJoinRoom = () => {
-        // Check if the room ID is provided
         if (roomID) {
             // Emit event to join the room
             socket?.emit(
@@ -40,8 +37,7 @@ export default function Home() {
                 { roomID: roomID, userProfile },
                 (error: string | undefined) => {
                     if (error) {
-                        // Display an error message if the room does not exist or is full
-                        alert(error); // Server sends a descriptive error message (e.g., "Room does not exist" or "Room is full")
+                        alert(error);
                     } else {
                         router.push(`/room/${roomID}`);
                     }

@@ -27,6 +27,7 @@ io.on("connection", (socket) => {
             // Add the player to the room
             rooms[roomID].players.push({ id: socket.id, ...userProfile });
             socket.currentRoom = roomID; // Store the room ID in the socket object
+            socket.join(roomID);
 
             console.log(
                 `Room ${roomID} created with players: ${rooms[roomID]}`
@@ -51,15 +52,13 @@ io.on("connection", (socket) => {
                 // Add the player to the room's players list with their profile information
                 room.players.push({ id: socket.id, ...userProfile });
                 socket.currentRoom = roomID; // Store the room ID in the socket object
-
-                console.log(`Player ${socket.id} joined room ${roomID}`);
-                console.log(room);
-
+                socket.join(roomID);
                 callback(); // Notify the client of success
                 io.to(roomID).emit("playerJoined", {
                     id: socket.id,
                     ...userProfile,
                 }); // Broadcast player join with profile data
+                console.log(`Player ${socket.id} joined room ${roomID}`);
             } else {
                 callback("Room is full");
             }
@@ -68,21 +67,28 @@ io.on("connection", (socket) => {
         }
     });
 
-    // Handle leaving a room
     socket.on("leaveRoom", (roomID) => {
         const room = rooms[roomID];
         if (room) {
-            const playerIndex = room.players.indexOf(socket.id);
+            // Find the index of the player object by matching socket.id with the player id
+            const playerIndex = room.players.findIndex(
+                (player) => player.id === socket.id
+            );
+
             if (playerIndex !== -1) {
+                // Remove the player object from the players array
                 room.players.splice(playerIndex, 1);
-                console.log(`Player ${socket.id} left room ${roomID}`);
                 io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
+                console.log(`Player ${socket.id} left room ${roomID}`);
             }
 
             // Optionally clean up the room if it's empty
             if (room.players.length === 0) {
                 delete rooms[roomID];
                 console.log(`Room ${roomID} deleted (no players left)`);
+            }
+            if (typeof callback === "function") {
+                callback();
             }
         }
 
@@ -104,16 +110,19 @@ io.on("connection", (socket) => {
         const roomID = socket.currentRoom;
         if (roomID) {
             const room = rooms[roomID];
-            const playerIndex = room?.players.indexOf(socket.id);
+            const playerIndex = room.players.findIndex(
+                (player) => player.id === socket.id
+            );
 
             if (playerIndex !== -1) {
+                // Remove the player object from the players array
                 room.players.splice(playerIndex, 1);
-                console.log(`Player ${socket.id} left room ${roomID}`);
                 io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
+                console.log(`Player ${socket.id} left room ${roomID}`);
             }
 
-            // Optionally, clean up if the room is empty
-            if (room && room.players.length === 0) {
+            // Optionally clean up the room if it's empty
+            if (room.players.length === 0) {
                 delete rooms[roomID];
                 console.log(`Room ${roomID} deleted (no players left)`);
             }
