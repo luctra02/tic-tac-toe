@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useSocketContext } from "@/components/SocketProvider";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, use } from "react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface User {
     id: string;
@@ -20,12 +21,12 @@ export default function RoomPage({
     const router = useRouter();
     const { socket } = useSocketContext();
     const [roomUsers, setRoomUsers] = useState<User[]>([]);
+    const [hostScore, setHostScore] = useState<number>(0);
+    const [playerScore, setPlayerScore] = useState<number>(0);
 
-    // Fetch users when the component mounts
     useEffect(() => {
         if (!socket) return;
 
-        // Request users in the room when socket is first connected
         socket.emit("getRoomUsers", roomID, (users: User[]) => {
             setRoomUsers(users);
         });
@@ -43,7 +44,6 @@ export default function RoomPage({
         socket.on("playerJoined", handlePlayerJoined);
         socket.on("playerLeft", handlePlayerLeft);
 
-        // Clean up listeners on unmount or if socket changes
         return () => {
             socket.off("playerJoined", handlePlayerJoined);
             socket.off("playerLeft", handlePlayerLeft);
@@ -55,19 +55,90 @@ export default function RoomPage({
         router.push(`/`);
     };
 
+    const incrementScore = (isHost: boolean) => {
+        if (isHost) {
+            setHostScore((prevScore) => prevScore + 1);
+        } else {
+            setPlayerScore((prevScore) => prevScore + 1);
+        }
+    };
+
+    const host = roomUsers[0] || null;
+    const otherPlayer = roomUsers[1] || null;
+
     return (
-        <div>
-            <h1>Welcome to Room {roomID}</h1>
-            <Button onClick={handleLeaveRoom} className="mt-4">
-                Leave Room
-            </Button>
-            <div className="mt-4">
-                <h2>Users in Room:</h2>
-                <ul>
-                    {roomUsers.map((user, index) => (
-                        <li key={index}>{user.full_name}</li>
-                    ))}
-                </ul>
+        <div className="relative min-h-screen bg-gray-50">
+            {/* Room Title */}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-center">
+                <h1 className="text-2xl font-bold">Room {roomID}</h1>
+                <Button
+                    onClick={handleLeaveRoom}
+                    className="mt-2 bg-red-500 text-white hover:bg-red-600"
+                >
+                    Leave Room
+                </Button>
+            </div>
+
+            {/* Host - Top Left */}
+            <div className="absolute top-6 left-6 flex flex-col items-center">
+                {host ? (
+                    <div className="flex flex-row items-center space-x-4">
+                        <div className="flex flex-col items-center text-center">
+                            <Avatar className="w-20 h-20 mb-2">
+                                <AvatarImage
+                                    src={host.avatar_url || ""}
+                                    alt={host.full_name}
+                                />
+                                <AvatarFallback>
+                                    {host.full_name.charAt(0)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <h2 className="text-lg font-medium">
+                                {host.full_name}
+                            </h2>
+                            <span className="text-sm text-gray-500">Host</span>
+                        </div>
+                        {/* Host Score */}
+                        <div className="text-center bg-blue-100 px-4 py-2 rounded-lg">
+                            <p className="text-sm text-gray-500">Score</p>
+                            <p className="text-lg font-bold">{hostScore}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-gray-500">Waiting for host...</p>
+                )}
+            </div>
+
+            {/* Other Player - Top Right */}
+            <div className="absolute top-6 right-6 flex flex-col items-center">
+                {otherPlayer ? (
+                    <div className="flex flex-row items-center space-x-4">
+                        {/* Player Score */}
+                        <div className="text-center bg-blue-100 px-4 py-2 rounded-lg">
+                            <p className="text-sm text-gray-500">Score</p>
+                            <p className="text-lg font-bold">{playerScore}</p>
+                        </div>
+                        <div className="flex flex-col items-center text-center">
+                            <Avatar className="w-20 h-20 mb-2">
+                                <AvatarImage
+                                    src={otherPlayer.avatar_url || ""}
+                                    alt={otherPlayer.full_name}
+                                />
+                                <AvatarFallback>
+                                    {otherPlayer.full_name.charAt(0)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <h2 className="text-lg font-medium">
+                                {otherPlayer.full_name}
+                            </h2>
+                            <span className="text-sm text-gray-500">
+                                Player
+                            </span>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-gray-500">Waiting for a player...</p>
+                )}
             </div>
         </div>
     );
