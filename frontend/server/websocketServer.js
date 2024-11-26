@@ -132,6 +132,17 @@ io.on("connection", (socket) => {
         onlinePlayers--;
         io.emit("updateOnlinePlayers", onlinePlayers);
     });
+
+    socket.on("startGame", (roomID) => {
+        const room = rooms[roomID];
+        if (room && room.players.length === 2) {
+            // Notify the players that the game has started
+            io.to(roomID).emit("gameStarted");
+            console.log(`Game started in room ${roomID}`);
+        } else {
+            console.log("Room is not full yet, can't start the game.");
+        }
+    });
 });
 
 const PORT = process.env.PORT || 3001;

@@ -5,6 +5,7 @@ import { useSocketContext } from "@/components/SocketProvider";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, use } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import TicTacToe from "@/components/TicTacToe";
 
 interface User {
     id: string;
@@ -23,6 +24,7 @@ export default function RoomPage({
     const [roomUsers, setRoomUsers] = useState<User[]>([]);
     const [hostScore, setHostScore] = useState<number>(0);
     const [playerScore, setPlayerScore] = useState<number>(0);
+    const [gameStarted, setGameStarted] = useState(false);
 
     useEffect(() => {
         if (!socket) return;
@@ -41,12 +43,18 @@ export default function RoomPage({
             );
         };
 
+        const handleGameStart = () => {
+            setGameStarted(true);
+        };
+
         socket.on("playerJoined", handlePlayerJoined);
         socket.on("playerLeft", handlePlayerLeft);
+        socket.on("gameStarted", handleGameStart); // Listen for game start event
 
         return () => {
             socket.off("playerJoined", handlePlayerJoined);
             socket.off("playerLeft", handlePlayerLeft);
+            socket.off("gameStarted", handleGameStart);
         };
     }, [socket, roomID]);
 
@@ -55,11 +63,9 @@ export default function RoomPage({
         router.push(`/`);
     };
 
-    const incrementScore = (isHost: boolean) => {
-        if (isHost) {
-            setHostScore((prevScore) => prevScore + 1);
-        } else {
-            setPlayerScore((prevScore) => prevScore + 1);
+    const handleStartGame = () => {
+        if (roomUsers.length > 1) {
+            socket?.emit("startGame", roomID); // Emit event to start the game
         }
     };
 
@@ -70,7 +76,7 @@ export default function RoomPage({
         <div className="relative min-h-screen bg-gray-50">
             {/* Room Title */}
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-center">
-                <h1 className="text-2xl font-bold">Room {roomID}</h1>
+                <h1 className="text-2xl font-bold">Welcome to Room {roomID}</h1>
                 <Button
                     onClick={handleLeaveRoom}
                     className="mt-2 bg-red-500 text-white hover:bg-red-600"
@@ -140,6 +146,25 @@ export default function RoomPage({
                     <p className="text-gray-500">Waiting for a player...</p>
                 )}
             </div>
+
+            {/* Start Game Button */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
+                {roomUsers.length > 1 && !gameStarted && (
+                    <Button
+                        onClick={handleStartGame}
+                        className="bg-green-500 text-white hover:bg-green-600"
+                    >
+                        Start Game
+                    </Button>
+                )}
+            </div>
+
+            {/* Tic Tac Toe Game */}
+            {gameStarted && (
+                <div className="flex items-center justify-center h-screen">
+                    <TicTacToe />
+                </div>
+            )}
         </div>
     );
 }
