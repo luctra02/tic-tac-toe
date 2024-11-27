@@ -22,21 +22,25 @@ io.on("connection", (socket) => {
     // Handle room creation
     socket.on("createRoom", ({ roomID, userProfile }, callback) => {
         if (!rooms[roomID]) {
-            rooms[roomID] = { players: [] };
+            rooms[roomID] = {
+                players: [],
+                roles: { X: null, O: null },
+                board: Array(3)
+                    .fill()
+                    .map(() => Array(3).fill(null)),
+                isXNext: true, // Player X starts
+                winner: null,
+            };
 
-            // Add the player to the room
             rooms[roomID].players.push({ id: socket.id, ...userProfile });
-            socket.currentRoom = roomID; // Store the room ID in the socket object
+            rooms[roomID].roles["X"] = {
+                id: socket.id,
+                full_name: userProfile.full_name,
+            };
+            socket.currentRoom = roomID;
             socket.join(roomID);
 
-            console.log(
-                `Room ${roomID} created with players: ${rooms[roomID]}`
-            );
-
-            // Broadcast that a new room was created
             io.emit("roomCreated", roomID);
-
-            // Notify the client that the room was created
             callback();
         } else {
             callback("Room already exists");
@@ -51,13 +55,17 @@ io.on("connection", (socket) => {
             if (room.players.length < 2) {
                 // Add the player to the room's players list with their profile information
                 room.players.push({ id: socket.id, ...userProfile });
+                room.roles["O"] = {
+                    id: socket.id,
+                    full_name: userProfile.full_name,
+                };
                 socket.currentRoom = roomID; // Store the room ID in the socket object
                 socket.join(roomID);
                 callback(); // Notify the client of success
                 io.to(roomID).emit("playerJoined", {
                     id: socket.id,
                     ...userProfile,
-                }); // Broadcast player join with profile data
+                }); 
                 console.log(`Player ${socket.id} joined room ${roomID}`);
             } else {
                 callback("Room is full");
@@ -101,7 +109,88 @@ io.on("connection", (socket) => {
             // Return the list of players in the room
             callback(room.players);
         } else {
-            callback([]); // Return an empty array if the room does not exist
+            callback([]); 
+        }
+    });
+
+    socket.on("getRoomRoles", (roomID, callback) => {
+        const room = rooms[roomID];
+        if (room) {
+            // Return the list of players in the room
+            callback(room.roles);
+        } else {
+            callback([]); 
+        }
+    });
+
+    socket.on("startGame", (roomID) => {
+        const room = rooms[roomID];
+        if (room && room.players.length === 2) {
+            // Notify the players that the game has started
+            io.to(roomID).emit("gameStarted");
+            console.log(`Game started in room ${roomID}`);
+        } else {
+            console.log("Room is not full yet, can't start the game.");
+        }
+    });
+
+    // Handle making a move
+    socket.on("makeMove", ({ roomID, row, col }) => {
+        const room = rooms[roomID];
+        if (!room) return;
+
+        if (room.winner) {
+            io.to(roomID).emit("gameOver", { winner: room.winner });
+            return;
+        }
+
+        if (room.board[row][col] !== null) {
+            socket.emit("invalidMove", "Cell is already occupied");
+            return;
+        }
+
+        // Determine the current player based on turn
+        const currentPlayer = room.isXNext ? "X" : "O";
+        console.log(currentPlayer);
+        if (room.roles[currentPlayer].id !== socket.id) {
+            socket.emit("invalidMove", "It's not your turn");
+            return;
+        }
+
+        // Make the move
+        room.board[row][col] = currentPlayer;
+        room.isXNext = !room.isXNext; // Switch the turn
+
+        // Check for a winner
+        io.to(roomID).emit("gameUpdate", {
+            board: room.board,
+            isXNext: room.isXNext,
+        });
+        const winner = checkWinner(room.board);
+        if (winner) {
+            room.winner = winner;
+            io.to(roomID).emit("gameOver", { winner });
+        }
+    });
+
+    // Handle game reset
+    socket.on("resetGame", (roomID) => {
+        if (rooms[roomID]) {
+            rooms[roomID] = {
+                players: rooms[roomID].players, 
+                board: Array(3)
+                    .fill()
+                    .map(() => Array(3).fill(null)), 
+                roles: rooms[roomID].roles,
+                isXNext: true, 
+                winner: null, 
+            };
+
+            // Emit the reset event to the client to clear the board and start a new game
+            io.to(roomID).emit("gameReset", {
+                board: rooms[roomID].board,
+                isXNext: rooms[roomID].isXNext,
+            });
         }
     });
 
@@ -133,16 +222,42 @@ io.on("connection", (socket) => {
         io.emit("updateOnlinePlayers", onlinePlayers);
     });
 
-    socket.on("startGame", (roomID) => {
-        const room = rooms[roomID];
-        if (room && room.players.length === 2) {
-            // Notify the players that the game has started
-            io.to(roomID).emit("gameStarted");
-            console.log(`Game started in room ${roomID}`);
-        } else {
-            console.log("Room is not full yet, can't start the game.");
+    // Helper function to check for a winner
+    function checkWinner(board) {
+        // Check rows and columns
+        for (let i = 0; i < 3; i++) {
+            if (
+                board[i][0] &&
+                board[i][0] === board[i][1] &&
+                board[i][1] === board[i][2]
+            ) {
+                return board[i][0];
+            }
+            if (
+                board[0][i] &&
+                board[0][i] === board[1][i] &&
+                board[1][i] === board[2][i]
+            ) {
+                return board[0][i];
+            }
         }
-    });
+        // Check diagonals
+        if (
+            board[0][0] &&
+            board[0][0] === board[1][1] &&
+            board[1][1] === board[2][2]
+        ) {
+            return board[0][0];
+        }
+        if (
+            board[0][2] &&
+            board[0][2] === board[1][1] &&
+            board[1][1] === board[2][0]
+        ) {
+            return board[0][2];
+        }
+        return null;
+    }
 });
 
 const PORT = process.env.PORT || 3001;

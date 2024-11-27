@@ -49,7 +49,7 @@ export default function RoomPage({
 
         socket.on("playerJoined", handlePlayerJoined);
         socket.on("playerLeft", handlePlayerLeft);
-        socket.on("gameStarted", handleGameStart); // Listen for game start event
+        socket.on("gameStarted", handleGameStart);
 
         return () => {
             socket.off("playerJoined", handlePlayerJoined);
@@ -162,7 +162,7 @@ export default function RoomPage({
             {/* Tic Tac Toe Game */}
             {gameStarted && (
                 <div className="flex items-center justify-center h-screen">
-                    <TicTacToe />
+                    <TicTacToe roomID={roomID} />
                 </div>
             )}
         </div>
