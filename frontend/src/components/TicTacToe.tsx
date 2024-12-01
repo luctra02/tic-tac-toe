@@ -11,8 +11,8 @@ interface Player {
 }
 
 interface Roles {
-    X: Player | null; 
-    O: Player | null; 
+    X: Player | null;
+    O: Player | null;
 }
 
 interface TicTacToeProps {
@@ -26,15 +26,15 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             .map(() => Array(3).fill(null))
     );
     const [isXNext, setIsXNext] = useState(true);
-    const [winner, setWinner] = useState<Player | null>(null);
+    const [winner, setWinner] = useState<Player | null>(null); // Updated to store the winner's full_name
     const { socket } = useSocketContext();
     const [roles, setRoles] = useState<Roles | null>(null);
 
-
-    //Connect component to the websocketserver
+    // Connect component to the websocket server
     useEffect(() => {
         if (!socket) return;
 
+        // Fetch roles when the component mounts
         socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
             if (roles) {
                 setRoles(roles);
@@ -48,7 +48,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             "gameUpdate",
             ({ board, isXNext }: { board: Cell[][]; isXNext: boolean }) => {
                 setBoard(board);
-                setIsXNext(isXNext); // Update the turn state
+                setIsXNext(isXNext);
             }
         );
 
@@ -58,15 +58,21 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             ({ board, isXNext }: { board: Cell[][]; isXNext: boolean }) => {
                 setBoard(board);
                 setIsXNext(isXNext);
-                setWinner(null);
+                setWinner(null); 
             }
         );
+
+        // Listen for game over
+        socket.on("gameOver", ({ winner }: { winner: Player | null }) => {
+            setWinner(winner); 
+        });
 
         return () => {
             socket.off("gameUpdate");
             socket.off("gameReset");
+            socket.off("gameOver");
         };
-    }, [roomID, socket]);
+    }, [roomID, socket, roles]);
 
     // Handle user moves
     const handleMove = (row: number, col: number) => {
@@ -81,8 +87,6 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
         socket?.emit("resetGame", roomID);
     };
 
-    console.log(roles);
-
     return (
         <div className="flex flex-col items-center space-y-4">
             <h1 className="text-2xl font-bold">Tic Tac Toe</h1>
@@ -94,7 +98,9 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
                 </p>
             )}
             {winner && (
-                <p className="text-lg font-semibold">{`Winner: ${winner}`}</p>
+                <p className="text-lg font-semibold">{`Winner: ${
+                    winner.full_name
+                } (${winner.id === roles?.X?.id ? "X" : "O"})`}</p>
             )}
             <div className="grid grid-cols-3 gap-2">
                 {board.map((row, rowIndex) =>

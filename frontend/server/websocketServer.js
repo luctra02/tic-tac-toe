@@ -13,7 +13,7 @@ const io = new Server(server, {
 });
 
 let onlinePlayers = 0;
-const rooms = {}; // Store room data (room ID -> list of player IDs)
+const rooms = {};
 
 io.on("connection", (socket) => {
     onlinePlayers++;
@@ -30,6 +30,7 @@ io.on("connection", (socket) => {
                     .map(() => Array(3).fill(null)),
                 isXNext: true, // Player X starts
                 winner: null,
+                scores: { X: 0, O: 0 },
             };
 
             rooms[roomID].players.push({ id: socket.id, ...userProfile });
@@ -65,7 +66,7 @@ io.on("connection", (socket) => {
                 io.to(roomID).emit("playerJoined", {
                     id: socket.id,
                     ...userProfile,
-                }); 
+                });
                 console.log(`Player ${socket.id} joined room ${roomID}`);
             } else {
                 callback("Room is full");
@@ -109,7 +110,7 @@ io.on("connection", (socket) => {
             // Return the list of players in the room
             callback(room.players);
         } else {
-            callback([]); 
+            callback([]);
         }
     });
 
@@ -119,7 +120,7 @@ io.on("connection", (socket) => {
             // Return the list of players in the room
             callback(room.roles);
         } else {
-            callback([]); 
+            callback([]);
         }
     });
 
@@ -151,7 +152,6 @@ io.on("connection", (socket) => {
 
         // Determine the current player based on turn
         const currentPlayer = room.isXNext ? "X" : "O";
-        console.log(currentPlayer);
         if (room.roles[currentPlayer].id !== socket.id) {
             socket.emit("invalidMove", "It's not your turn");
             return;
@@ -168,8 +168,7 @@ io.on("connection", (socket) => {
         });
         const winner = checkWinner(room.board);
         if (winner) {
-            room.winner = winner;
-            io.to(roomID).emit("gameOver", { winner });
+            handleGameOver(roomID, winner);
         }
     });
 
@@ -177,13 +176,14 @@ io.on("connection", (socket) => {
     socket.on("resetGame", (roomID) => {
         if (rooms[roomID]) {
             rooms[roomID] = {
-                players: rooms[roomID].players, 
+                players: rooms[roomID].players,
                 board: Array(3)
                     .fill()
-                    .map(() => Array(3).fill(null)), 
+                    .map(() => Array(3).fill(null)),
                 roles: rooms[roomID].roles,
-                isXNext: true, 
-                winner: null, 
+                isXNext: rooms[roomID].isXNext,
+                winner: null,
+                scores: rooms[roomID].scores,
             };
 
             // Emit the reset event to the client to clear the board and start a new game
@@ -257,6 +257,28 @@ io.on("connection", (socket) => {
             return board[0][2];
         }
         return null;
+    }
+
+    function handleGameOver(roomID, winner) {
+        const room = rooms[roomID];
+        if (!room) return;
+
+        // Update the room state with the winner
+        room.winner = winner;
+
+        // Update scores if needed
+        if (winner) {
+            room.scores[winner]++;
+        }
+
+        // Notify clients about game over
+        const winnerDetails = winner ? room.roles[winner] : null;
+        io.to(roomID).emit("gameOver", {
+            winner: winnerDetails, // Send the winner's details or null if it's a draw
+            scores: room.scores, // Send updated scores
+        });
+
+        console.log(`Game over in room ${roomID}. Winner: ${winner || "Draw"}`);
     }
 });
 

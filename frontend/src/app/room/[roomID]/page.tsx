@@ -13,6 +13,13 @@ interface User {
     avatar_url: string | null;
 }
 
+interface Scores {
+    scores: {
+        X: number;
+        O: number;
+    };
+}
+
 export default function RoomPage({
     params,
 }: {
@@ -47,16 +54,27 @@ export default function RoomPage({
             setGameStarted(true);
         };
 
+        const handleGameOver = ({ scores }: Scores) => {
+            // Update scores based on the event data
+            if (roomUsers[0]) {
+                setHostScore(scores.X);
+            }
+            if (roomUsers[1]) {
+                setPlayerScore(scores.O);
+            }
+        };
+
         socket.on("playerJoined", handlePlayerJoined);
         socket.on("playerLeft", handlePlayerLeft);
         socket.on("gameStarted", handleGameStart);
+        socket.on("gameOver", handleGameOver);
 
         return () => {
             socket.off("playerJoined", handlePlayerJoined);
             socket.off("playerLeft", handlePlayerLeft);
             socket.off("gameStarted", handleGameStart);
         };
-    }, [socket, roomID]);
+    }, [socket, roomID, roomUsers]);
 
     const handleLeaveRoom = () => {
         socket?.emit("leaveRoom", roomID, () => {});
