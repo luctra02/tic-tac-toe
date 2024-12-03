@@ -128,12 +128,12 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
                 }
                 `}
             </style>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-3">
                 {board.map((row, rowIndex) =>
                     row.map((cell, colIndex) => (
                         <button
                             key={`${rowIndex}-${colIndex}`}
-                            className="w-16 h-16 border border-gray-300 flex items-center justify-center text-2xl"
+                            className="w-24 h-24 border border-gray-300 flex items-center justify-center text-3xl"
                             onClick={() => handleMove(rowIndex, colIndex)}
                             disabled={cell !== null || winner !== null}
                         >
