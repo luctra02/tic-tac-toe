@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSocketContext } from "@/components/SocketProvider";
 
-type Cell = Player | null;
+type Cell = "X" | "O" | null;
 
 interface Player {
     id: string;
@@ -26,15 +26,20 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             .map(() => Array(3).fill(null))
     );
     const [isXNext, setIsXNext] = useState(true);
-    const [winner, setWinner] = useState<Player | null>(null); // Updated to store the winner's full_name
+    const [winner, setWinner] = useState<Player | null>(null);
     const { socket } = useSocketContext();
     const [roles, setRoles] = useState<Roles | null>(null);
+    const [blinkingCells, setBlinkingCells] = useState<
+        {
+            player: "X" | "O";
+            row: number;
+            col: number;
+        }[]
+    >([]);
 
-    // Connect component to the websocket server
     useEffect(() => {
         if (!socket) return;
 
-        // Fetch roles when the component mounts
         socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
             if (roles) {
                 setRoles(roles);
@@ -43,28 +48,41 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             }
         });
 
-        // Listen for game updates
         socket.on(
             "gameUpdate",
-            ({ board, isXNext }: { board: Cell[][]; isXNext: boolean }) => {
+            ({
+                board,
+                isXNext,
+                blinkingCell,
+            }: {
+                board: Cell[][];
+                isXNext: boolean;
+                blinkingCell:
+                    | {
+                          player: "X" | "O";
+                          row: number;
+                          col: number;
+                      }[]
+                    | null;
+            }) => {
                 setBoard(board);
                 setIsXNext(isXNext);
+                setBlinkingCells(blinkingCell || []);
             }
         );
 
-        // Listen for game reset
         socket.on(
             "gameReset",
             ({ board, isXNext }: { board: Cell[][]; isXNext: boolean }) => {
                 setBoard(board);
                 setIsXNext(isXNext);
-                setWinner(null); 
+                setWinner(null);
+                setBlinkingCells([]);
             }
         );
 
-        // Listen for game over
         socket.on("gameOver", ({ winner }: { winner: Player | null }) => {
-            setWinner(winner); 
+            setWinner(winner);
         });
 
         return () => {
@@ -72,19 +90,20 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             socket.off("gameReset");
             socket.off("gameOver");
         };
-    }, [roomID, socket, roles]);
+    }, [roomID, socket]);
 
-    // Handle user moves
     const handleMove = (row: number, col: number) => {
-        if (board[row][col] || winner) return; // Check if cell is occupied or game is over
-
-        // Emit the move to the server with the passed roomID
+        if (board[row][col] || winner) return;
         socket?.emit("makeMove", { roomID, row, col });
     };
 
-    // Reset the game by emitting the reset event to the server
     const resetGame = () => {
         socket?.emit("resetGame", roomID);
+    };
+
+    // Inline style for the blinking effect for X and O pieces
+    const blinkingStyle = {
+        animation: "blink 1s step-end infinite",
     };
 
     return (
@@ -102,6 +121,13 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
                     winner.full_name
                 } (${winner.id === roles?.X?.id ? "X" : "O"})`}</p>
             )}
+            <style>
+                {`
+                @keyframes blink {
+                    50% { opacity: 0.5; }
+                }
+                `}
+            </style>
             <div className="grid grid-cols-3 gap-2">
                 {board.map((row, rowIndex) =>
                     row.map((cell, colIndex) => (
@@ -111,7 +137,21 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
                             onClick={() => handleMove(rowIndex, colIndex)}
                             disabled={cell !== null || winner !== null}
                         >
-                            {cell}
+                            {cell && (
+                                <span
+                                    style={
+                                        blinkingCells.some(
+                                            (cellInfo) =>
+                                                cellInfo.row === rowIndex &&
+                                                cellInfo.col === colIndex
+                                        )
+                                            ? blinkingStyle
+                                            : {}
+                                    }
+                                >
+                                    {cell}
+                                </span>
+                            )}
                         </button>
                     ))
                 )}

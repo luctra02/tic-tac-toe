@@ -157,18 +157,61 @@ io.on("connection", (socket) => {
             return;
         }
 
-        // Make the move
-        room.board[row][col] = currentPlayer;
-        room.isXNext = !room.isXNext; // Switch the turn
+        // Track player's moves
+        if (!room.playerMoves) {
+            room.playerMoves = { X: [], O: [] };
+        }
 
-        // Check for a winner
+        // Check if the player already has 3 pieces on the board
+        if (room.playerMoves[currentPlayer].length === 3) {
+            // Remove the oldest move
+            const [oldRow, oldCol] = room.playerMoves[currentPlayer].shift();
+            room.board[oldRow][oldCol] = null; // Clear the oldest piece
+        }
+
+        // Add the new move to the player's move list
+        room.playerMoves[currentPlayer].push([row, col]);
+
+        // Place the player's symbol on the board
+        room.board[row][col] = currentPlayer;
+
+        // Check if either "X" or "O" have exactly 3 pieces on the board
+        const xMoves = room.playerMoves["X"];
+        const oMoves = room.playerMoves["O"];
+
+        if (xMoves.length === 3 || oMoves.length === 3) {
+            if (xMoves.length === 3 && oMoves.length === 3) {
+                // Set both cells to blink if both have 3 pieces
+                room.blinkingCell = [
+                    { player: "X", row: xMoves[0][0], col: xMoves[0][1] },
+                    { player: "O", row: oMoves[0][0], col: oMoves[0][1] },
+                ];
+            } else if (xMoves.length === 3) {
+                room.blinkingCell = [
+                    { player: "X", row: xMoves[0][0], col: xMoves[0][1] },
+                ];
+            } else if (oMoves.length === 3) {
+                room.blinkingCell = [
+                    { player: "O", row: oMoves[0][0], col: oMoves[0][1] },
+                ];
+            }
+        } else {
+            room.blinkingCell = null; // Clear the blinking cell if not exactly 3 pieces
+        }
+
+        room.isXNext = !room.isXNext;
+
+        // Emit the updated game state
         io.to(roomID).emit("gameUpdate", {
             board: room.board,
             isXNext: room.isXNext,
+            blinkingCell: room.blinkingCell,
         });
-        const winner = checkWinner(room.board);
+
+        const winner = checkWinner(room.board, currentPlayer);
         if (winner) {
             handleGameOver(roomID, winner);
+            return;
         }
     });
 
@@ -273,12 +316,21 @@ io.on("connection", (socket) => {
 
         // Notify clients about game over
         const winnerDetails = winner ? room.roles[winner] : null;
-        io.to(roomID).emit("gameOver", {
-            winner: winnerDetails, // Send the winner's details or null if it's a draw
-            scores: room.scores, // Send updated scores
-        });
+        io.to(roomID).emit(
+            "gameOver",
+            {
+                winner: winnerDetails,
+                scores: room.scores,
+            },
+            () => {
+                console.log(
+                    `gameOver acknowledged by all clients in room ${roomID}`
+                );
+            }
+        );
 
         console.log(`Game over in room ${roomID}. Winner: ${winner || "Draw"}`);
+        console.log(room.scores);
     }
 });
 

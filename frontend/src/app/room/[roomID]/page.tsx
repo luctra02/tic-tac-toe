@@ -55,13 +55,8 @@ export default function RoomPage({
         };
 
         const handleGameOver = ({ scores }: Scores) => {
-            // Update scores based on the event data
-            if (roomUsers[0]) {
-                setHostScore(scores.X);
-            }
-            if (roomUsers[1]) {
-                setPlayerScore(scores.O);
-            }
+            setHostScore(scores.X);
+            setPlayerScore(scores.O);
         };
 
         socket.on("playerJoined", handlePlayerJoined);
@@ -73,6 +68,7 @@ export default function RoomPage({
             socket.off("playerJoined", handlePlayerJoined);
             socket.off("playerLeft", handlePlayerLeft);
             socket.off("gameStarted", handleGameStart);
+            socket.off("gameOver", handleGameOver);
         };
     }, [socket, roomID, roomUsers]);
 
