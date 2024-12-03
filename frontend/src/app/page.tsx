@@ -2,18 +2,46 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoginButton from "@/components/LogInButton";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useSocketContext } from "@/components/SocketProvider";
 import useUser from "@/app/hooks/useUser";
+import { createSupabaseBrowser } from "@/lib/supabase/client";
+
+interface statsData {
+    wins: number;
+    total_matches: number;
+}
 
 export default function Home() {
     const { playersOnline, socket } = useSocketContext();
     const [roomID, setRoomID] = useState("");
     const router = useRouter();
     const { data } = useUser();
+    const supabase = createSupabaseBrowser();
+    const [playerStats, setPlayerStats] = useState<statsData | null>(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (data?.id) {
+                const { data: statsData, error } = await supabase
+                    .from("playerstats")
+                    .select("wins, total_matches")
+                    .eq("id", data.id)
+                    .single();
+
+                if (error) {
+                    console.error("Error fetching player stats:", error);
+                } else {
+                    setPlayerStats(statsData);
+                }
+            }
+        };
+
+        fetchStats();
+    }, [data?.id, supabase]);
 
     const userProfile = {
         full_name: data?.user_metadata?.full_name || "Guest",
@@ -22,8 +50,6 @@ export default function Home() {
 
     const handleCreateRoom = () => {
         const newRoomID = nanoid(6); // Generate a 6-character ID
-        setRoomID(newRoomID);
-
         socket?.emit("createRoom", { roomID: newRoomID, userProfile }, () => {
             router.push(`/room/${newRoomID}`);
         });
@@ -46,15 +72,6 @@ export default function Home() {
         } else {
             alert("Please enter a room ID.");
         }
-    };
-
-    // Placeholder stats data
-    const stats = {
-        playersOnline: 120, // Example static data
-        totalMatches: 320,
-        wins: 150,
-        losses: 170,
-        winRate: "47%",
     };
 
     return (
@@ -99,25 +116,66 @@ export default function Home() {
                     {/* Place the LoginButton at the end of the row */}
                     <LoginButton />
                 </div>
-                <div className="bg-white rounded-lg shadow-md p-4 w-full mb-4">
-                    <ul className="space-y-4">
-                        <li className="flex justify-between p-2 bg-gray-100 rounded-md">
-                            <strong>Total Matches:</strong>
-                            <span>{stats.totalMatches}</span>
-                        </li>
-                        <li className="flex justify-between p-2 bg-gray-100 rounded-md">
-                            <strong>Wins:</strong>
-                            <span>{stats.wins}</span>
-                        </li>
-                        <li className="flex justify-between p-2 bg-gray-100 rounded-md">
-                            <strong>Losses:</strong>
-                            <span>{stats.losses}</span>
-                        </li>
-                        <li className="flex justify-between p-2 bg-gray-100 rounded-md">
-                            <strong>Win Rate:</strong>
-                            <span>{stats.winRate}</span>
-                        </li>
-                    </ul>
+                <div className="relative bg-white rounded-lg shadow-md p-4 w-full mb-4">
+                    {data?.id ? (
+                        <ul className="space-y-4">
+                            <li className="flex justify-between p-2 bg-gray-100 rounded-md">
+                                <strong>Total Matches:</strong>
+                                <span>{playerStats?.total_matches}</span>
+                            </li>
+                            <li className="flex justify-between p-2 bg-gray-100 rounded-md">
+                                <strong>Wins:</strong>
+                                <span>{playerStats?.wins}</span>
+                            </li>
+                            <li className="flex justify-between p-2 bg-gray-100 rounded-md">
+                                <strong>Losses:</strong>
+                                <span>
+                                    {(playerStats?.total_matches || 0) -
+                                        (playerStats?.wins || 0)}
+                                </span>
+                            </li>
+                            <li className="flex justify-between p-2 bg-gray-100 rounded-md">
+                                <strong>Win Rate:</strong>
+                                <span>
+                                    {playerStats?.total_matches
+                                        ? (
+                                              (playerStats.wins /
+                                                  playerStats.total_matches) *
+                                              100
+                                          ).toFixed(2) + "%"
+                                        : "0%"}
+                                </span>
+                            </li>
+                        </ul>
+                    ) : (
+                        <>
+                            {/* Blur and Overlay */}
+                            <div className="absolute inset-0 bg-white rounded-lg flex items-center justify-center">
+                                <p className="text-lg font-semibold">
+                                    Log in or register to view stats!
+                                </p>
+                            </div>
+                            {/* Blurred stats for visual consistency */}
+                            <ul className="space-y-4 filter blur-md">
+                                <li className="flex justify-between p-2 bg-gray-100 rounded-md">
+                                    <strong>Total Matches:</strong>
+                                    <span>--</span>
+                                </li>
+                                <li className="flex justify-between p-2 bg-gray-100 rounded-md">
+                                    <strong>Wins:</strong>
+                                    <span>--</span>
+                                </li>
+                                <li className="flex justify-between p-2 bg-gray-100 rounded-md">
+                                    <strong>Losses:</strong>
+                                    <span>--</span>
+                                </li>
+                                <li className="flex justify-between p-2 bg-gray-100 rounded-md">
+                                    <strong>Win Rate:</strong>
+                                    <span>--</span>
+                                </li>
+                            </ul>
+                        </>
+                    )}
                 </div>
 
                 {/* Players Online Field */}

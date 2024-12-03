@@ -242,21 +242,24 @@ io.on("connection", (socket) => {
         const roomID = socket.currentRoom;
         if (roomID) {
             const room = rooms[roomID];
-            const playerIndex = room.players.findIndex(
-                (player) => player.id === socket.id
-            );
+            if (room) {
+                // Ensure room exists
+                const playerIndex = room.players.findIndex(
+                    (player) => player.id === socket.id
+                );
 
-            if (playerIndex !== -1) {
-                // Remove the player object from the players array
-                room.players.splice(playerIndex, 1);
-                io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
-                console.log(`Player ${socket.id} left room ${roomID}`);
-            }
+                if (playerIndex !== -1) {
+                    // Remove the player object from the players array
+                    room.players.splice(playerIndex, 1);
+                    io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
+                    console.log(`Player ${socket.id} left room ${roomID}`);
+                }
 
-            // Optionally clean up the room if it's empty
-            if (room.players.length === 0) {
-                delete rooms[roomID];
-                console.log(`Room ${roomID} deleted (no players left)`);
+                // Optionally clean up the room if it's empty
+                if (room.players.length === 0) {
+                    delete rooms[roomID];
+                    console.log(`Room ${roomID} deleted (no players left)`);
+                }
             }
         }
 
