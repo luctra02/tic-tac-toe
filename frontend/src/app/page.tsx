@@ -46,6 +46,7 @@ export default function Home() {
     const userProfile = {
         full_name: data?.user_metadata?.full_name || "Guest",
         avatar_url: data?.user_metadata?.avatar_url || null,
+        uuid: data?.id || null,
     };
 
     const handleCreateRoom = () => {

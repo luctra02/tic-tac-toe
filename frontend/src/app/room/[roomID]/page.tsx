@@ -6,20 +6,24 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, use } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import TicTacToe from "@/components/TicTacToe";
+import { createSupabaseBrowser } from "@/lib/supabase/client";
+const supabase = createSupabaseBrowser();
 
 interface User {
     id: string;
     full_name: string;
-    avatar_url: string | null;
+    avatar_url?: string | null;
+    uuid?: string | null;
+    score: number; // User's score is required as per the payload
 }
 
-interface Scores {
-    scores: {
-        X: number;
-        O: number;
+interface Payload {
+    winner: "X" | "O" | null; // Indicates the winning role or null for a draw
+    roles: {
+        X: User;
+        O: User;
     };
 }
-
 export default function RoomPage({
     params,
 }: {
@@ -54,9 +58,50 @@ export default function RoomPage({
             setGameStarted(true);
         };
 
-        const handleGameOver = ({ scores }: Scores) => {
-            setHostScore(scores.X);
-            setPlayerScore(scores.O);
+        const handleGameOver = async ({ winner, roles }: Payload) => {
+            setHostScore(roles.X.score);
+            setPlayerScore(roles.O.score);
+            if (roles.X.uuid) {
+                const { data } = await supabase
+                    .from("playerstats")
+                    .select("total_matches")
+                    .eq("id", roles.X.uuid)
+                    .single(); // Get a single row
+
+                const newTotalMatches = (data?.total_matches || 0) + 1;
+                const {} = await supabase
+                    .from("playerstats")
+                    .update({ total_matches: newTotalMatches })
+                    .eq("id", roles.X.uuid);
+            }
+
+            if (roles.O.uuid) {
+                const { data } = await supabase
+                    .from("playerstats")
+                    .select("total_matches")
+                    .eq("id", roles.O.uuid)
+                    .single(); // Get a single row
+
+                const newTotalMatches = (data?.total_matches || 0) + 1;
+                const {} = await supabase
+                    .from("playerstats")
+                    .update({ total_matches: newTotalMatches })
+                    .eq("id", roles.O.uuid);
+            }
+            const winnerID = roles?.[winner as "X" | "O"]?.uuid;
+            if (winnerID) {
+                const { data } = await supabase
+                    .from("playerstats")
+                    .select("wins")
+                    .eq("id", winnerID)
+                    .single(); // Get a single ro
+
+                const newWins = (data?.wins || 0) + 1;
+                const {} = await supabase
+                    .from("playerstats")
+                    .update({ wins: newWins })
+                    .eq("id", winnerID);
+            }
         };
 
         socket.on("playerJoined", handlePlayerJoined);

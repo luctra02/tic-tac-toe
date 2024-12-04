@@ -30,13 +30,14 @@ io.on("connection", (socket) => {
                     .map(() => Array(3).fill(null)),
                 isXNext: true, // Player X starts
                 winner: null,
-                scores: { X: 0, O: 0 },
             };
 
             rooms[roomID].players.push({ id: socket.id, ...userProfile });
             rooms[roomID].roles["X"] = {
                 id: socket.id,
                 full_name: userProfile.full_name,
+                uuid: userProfile.uuid,
+                score: 0,
             };
             socket.currentRoom = roomID;
             socket.join(roomID);
@@ -59,6 +60,8 @@ io.on("connection", (socket) => {
                 room.roles["O"] = {
                     id: socket.id,
                     full_name: userProfile.full_name,
+                    uuid: userProfile.uuid,
+                    score: 0,
                 };
                 socket.currentRoom = roomID; // Store the room ID in the socket object
                 socket.join(roomID);
@@ -226,7 +229,6 @@ io.on("connection", (socket) => {
                 roles: rooms[roomID].roles,
                 isXNext: rooms[roomID].isXNext,
                 winner: null,
-                scores: rooms[roomID].scores,
             };
 
             // Emit the reset event to the client to clear the board and start a new game
@@ -314,26 +316,13 @@ io.on("connection", (socket) => {
 
         // Update scores if needed
         if (winner) {
-            room.scores[winner]++;
+            room.roles[winner].score++;
         }
 
-        // Notify clients about game over
-        const winnerDetails = winner ? room.roles[winner] : null;
-        io.to(roomID).emit(
-            "gameOver",
-            {
-                winner: winnerDetails,
-                scores: room.scores,
-            },
-            () => {
-                console.log(
-                    `gameOver acknowledged by all clients in room ${roomID}`
-                );
-            }
-        );
-
-        console.log(`Game over in room ${roomID}. Winner: ${winner || "Draw"}`);
-        console.log(room.scores);
+        io.to(roomID).emit("gameOver", {
+            winner: winner,
+            roles: room.roles,
+        });
     }
 });
 

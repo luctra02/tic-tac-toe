@@ -26,7 +26,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             .map(() => Array(3).fill(null))
     );
     const [isXNext, setIsXNext] = useState(true);
-    const [winner, setWinner] = useState<Player | null>(null);
+    const [winner, setWinner] = useState<string | null>(null);
     const { socket } = useSocketContext();
     const [roles, setRoles] = useState<Roles | null>(null);
     const [blinkingCells, setBlinkingCells] = useState<
@@ -81,7 +81,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             }
         );
 
-        socket.on("gameOver", ({ winner }: { winner: Player | null }) => {
+        socket.on("gameOver", ({ winner }: { winner: string | null }) => {
             setWinner(winner);
         });
 
@@ -118,9 +118,10 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             )}
             {winner && (
                 <p className="text-lg font-semibold">{`Winner: ${
-                    winner.full_name
-                } (${winner.id === roles?.X?.id ? "X" : "O"})`}</p>
+                    roles?.[winner as "X" | "O"]?.full_name
+                } (${winner})`}</p>
             )}
+
             <style>
                 {`
                 @keyframes blink {
