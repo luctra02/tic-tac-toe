@@ -26,6 +26,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
             .map(() => Array(3).fill(null))
     );
     const [isXNext, setIsXNext] = useState(true);
+    const [gameStarted, setGameStarted] = useState(true);
     const [winner, setWinner] = useState<string | null>(null);
     const { socket } = useSocketContext();
     const [roles, setRoles] = useState<Roles | null>(null);
@@ -78,11 +79,13 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
                 setIsXNext(isXNext);
                 setWinner(null);
                 setBlinkingCells([]);
+                setGameStarted(true);
             }
         );
 
         socket.on("gameOver", ({ winner }: { winner: string | null }) => {
             setWinner(winner);
+            setGameStarted(false);
         });
 
         return () => {
@@ -157,12 +160,14 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
                     ))
                 )}
             </div>
-            <button
-                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-                onClick={resetGame}
-            >
-                Reset Game
-            </button>
+            {!gameStarted && (
+                <button
+                    className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                    onClick={resetGame}
+                >
+                    Reset Game
+                </button>
+            )}
         </div>
     );
 };

@@ -14,7 +14,7 @@ interface User {
     full_name: string;
     avatar_url?: string | null;
     uuid?: string | null;
-    score: number; // User's score is required as per the payload
+    score: number;
 }
 
 interface Payload {
@@ -66,7 +66,7 @@ export default function RoomPage({
                     .from("playerstats")
                     .select("total_matches")
                     .eq("id", roles.X.uuid)
-                    .single(); // Get a single row
+                    .single();
 
                 const newTotalMatches = (data?.total_matches || 0) + 1;
                 const {} = await supabase
@@ -80,7 +80,7 @@ export default function RoomPage({
                     .from("playerstats")
                     .select("total_matches")
                     .eq("id", roles.O.uuid)
-                    .single(); // Get a single row
+                    .single();
 
                 const newTotalMatches = (data?.total_matches || 0) + 1;
                 const {} = await supabase
@@ -94,7 +94,7 @@ export default function RoomPage({
                     .from("playerstats")
                     .select("wins")
                     .eq("id", winnerID)
-                    .single(); // Get a single ro
+                    .single();
 
                 const newWins = (data?.wins || 0) + 1;
                 const {} = await supabase

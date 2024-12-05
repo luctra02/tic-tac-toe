@@ -30,6 +30,7 @@ io.on("connection", (socket) => {
                     .map(() => Array(3).fill(null)),
                 isXNext: true, // Player X starts
                 winner: null,
+                gameStarted: false,
             };
 
             rooms[roomID].players.push({ id: socket.id, ...userProfile });
@@ -92,6 +93,13 @@ io.on("connection", (socket) => {
                 room.players.splice(playerIndex, 1);
                 io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
                 console.log(`Player ${socket.id} left room ${roomID}`);
+                if (room.gameStarted && room.players.length === 1) {
+                    if (room.roles.X.id == socket.id) {
+                        handleGameOver(roomID, "O");
+                    } else {
+                        handleGameOver(roomID, "X");
+                    }
+                }
             }
 
             // Optionally clean up the room if it's empty
@@ -130,7 +138,7 @@ io.on("connection", (socket) => {
     socket.on("startGame", (roomID) => {
         const room = rooms[roomID];
         if (room && room.players.length === 2) {
-            // Notify the players that the game has started
+            room.gameStarted = true;
             io.to(roomID).emit("gameStarted");
             console.log(`Game started in room ${roomID}`);
         } else {
@@ -229,6 +237,7 @@ io.on("connection", (socket) => {
                 roles: rooms[roomID].roles,
                 isXNext: rooms[roomID].isXNext,
                 winner: null,
+                gameStarted: true,
             };
 
             // Emit the reset event to the client to clear the board and start a new game
@@ -254,7 +263,9 @@ io.on("connection", (socket) => {
                     // Remove the player object from the players array
                     room.players.splice(playerIndex, 1);
                     io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
-                    console.log(`Player ${socket.id} left room ${roomID}`);
+                    console.log(room);
+                    if (room.gameStarted && room.players.length === 1) {
+                    }
                 }
 
                 // Optionally clean up the room if it's empty
@@ -271,54 +282,51 @@ io.on("connection", (socket) => {
     });
 
     // Helper function to check for a winner
-    function checkWinner(board) {
+    function checkWinner(board, currentPlayer) {
         // Check rows and columns
         for (let i = 0; i < 3; i++) {
             if (
-                board[i][0] &&
-                board[i][0] === board[i][1] &&
-                board[i][1] === board[i][2]
+                board[i][0] === currentPlayer &&
+                board[i][1] === currentPlayer &&
+                board[i][2] === currentPlayer
             ) {
-                return board[i][0];
+                return currentPlayer;
             }
             if (
-                board[0][i] &&
-                board[0][i] === board[1][i] &&
-                board[1][i] === board[2][i]
+                board[0][i] === currentPlayer &&
+                board[1][i] === currentPlayer &&
+                board[2][i] === currentPlayer
             ) {
-                return board[0][i];
+                return currentPlayer;
             }
         }
+
         // Check diagonals
         if (
-            board[0][0] &&
-            board[0][0] === board[1][1] &&
-            board[1][1] === board[2][2]
+            board[0][0] === currentPlayer &&
+            board[1][1] === currentPlayer &&
+            board[2][2] === currentPlayer
         ) {
-            return board[0][0];
+            return currentPlayer;
         }
         if (
-            board[0][2] &&
-            board[0][2] === board[1][1] &&
-            board[1][1] === board[2][0]
+            board[0][2] === currentPlayer &&
+            board[1][1] === currentPlayer &&
+            board[2][0] === currentPlayer
         ) {
-            return board[0][2];
+            return currentPlayer;
         }
+
+        // No winner
         return null;
     }
 
     function handleGameOver(roomID, winner) {
         const room = rooms[roomID];
         if (!room) return;
-
-        // Update the room state with the winner
         room.winner = winner;
-
-        // Update scores if needed
-        if (winner) {
-            room.roles[winner].score++;
-        }
-
+        room.roles[winner].score++;
+        room.gameStarted = false;
         io.to(roomID).emit("gameOver", {
             winner: winner,
             roles: room.roles,
