@@ -33,10 +33,11 @@ io.on("connection", (socket) => {
                 gameStarted: false,
             };
 
-            rooms[roomID].players.push({ id: socket.id, ...userProfile });
+            rooms[roomID].players.push({ id: socket.id });
             rooms[roomID].roles["X"] = {
                 id: socket.id,
                 full_name: userProfile.full_name,
+                avatar_url: userProfile.avatar_url,
                 uuid: userProfile.uuid,
                 score: 0,
             };
@@ -57,13 +58,25 @@ io.on("connection", (socket) => {
         if (room) {
             if (room.players.length < 2) {
                 // Add the player to the room's players list with their profile information
-                room.players.push({ id: socket.id, ...userProfile });
-                room.roles["O"] = {
-                    id: socket.id,
-                    full_name: userProfile.full_name,
-                    uuid: userProfile.uuid,
-                    score: 0,
-                };
+                if (!room.roles["O"]) {
+                    room.players.push({ id: socket.id });
+                    room.roles["O"] = {
+                        id: socket.id,
+                        full_name: userProfile.full_name,
+                        avatar_url: userProfile.avatar_url,
+                        uuid: userProfile.uuid,
+                        score: 0,
+                    };
+                } else {
+                    room.players.push({ id: socket.id });
+                    room.roles["X"] = {
+                        id: socket.id,
+                        full_name: userProfile.full_name,
+                        avatar_url: userProfile.avatar_url,
+                        uuid: userProfile.uuid,
+                        score: 0,
+                    };
+                }
                 socket.currentRoom = roomID; // Store the room ID in the socket object
                 socket.join(roomID);
                 callback(); // Notify the client of success
@@ -83,36 +96,8 @@ io.on("connection", (socket) => {
     socket.on("leaveRoom", (roomID) => {
         const room = rooms[roomID];
         if (room) {
-            // Find the index of the player object by matching socket.id with the player id
-            const playerIndex = room.players.findIndex(
-                (player) => player.id === socket.id
-            );
-
-            if (playerIndex !== -1) {
-                // Remove the player object from the players array
-                room.players.splice(playerIndex, 1);
-                io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
-                console.log(`Player ${socket.id} left room ${roomID}`);
-                if (room.gameStarted && room.players.length === 1) {
-                    if (room.roles.X.id == socket.id) {
-                        handleGameOver(roomID, "O");
-                    } else {
-                        handleGameOver(roomID, "X");
-                    }
-                }
-            }
-
-            // Optionally clean up the room if it's empty
-            if (room.players.length === 0) {
-                delete rooms[roomID];
-                console.log(`Room ${roomID} deleted (no players left)`);
-            }
-            if (typeof callback === "function") {
-                callback();
-            }
+            handleDisconnect(room, roomID);
         }
-
-        // No need to update `onlinePlayers` count unless a full disconnect happens
     });
 
     socket.on("getRoomUsers", (roomID, callback) => {
@@ -254,25 +239,7 @@ io.on("connection", (socket) => {
         if (roomID) {
             const room = rooms[roomID];
             if (room) {
-                // Ensure room exists
-                const playerIndex = room.players.findIndex(
-                    (player) => player.id === socket.id
-                );
-
-                if (playerIndex !== -1) {
-                    // Remove the player object from the players array
-                    room.players.splice(playerIndex, 1);
-                    io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
-                    console.log(room);
-                    if (room.gameStarted && room.players.length === 1) {
-                    }
-                }
-
-                // Optionally clean up the room if it's empty
-                if (room.players.length === 0) {
-                    delete rooms[roomID];
-                    console.log(`Room ${roomID} deleted (no players left)`);
-                }
+                handleDisconnect(room, roomID);
             }
         }
 
@@ -329,8 +296,43 @@ io.on("connection", (socket) => {
         room.gameStarted = false;
         io.to(roomID).emit("gameOver", {
             winner: winner,
-            roles: room.roles,
+            X: room.roles.X,
+            O: room.roles.O,
         });
+    }
+
+    function handleDisconnect(room, roomID) {
+        const playerIndex = room.players.findIndex(
+            (player) => player.id === socket.id
+        );
+
+        if (playerIndex !== -1) {
+            // Remove the player object from the players array
+            room.players.splice(playerIndex, 1);
+            io.to(roomID).emit("playerLeft", socket.id); // Notify others in the room
+            console.log(`Player ${socket.id} left room ${roomID}`);
+            // Set the corresponding role to null when a player leaves
+
+            if (room.gameStarted && room.players.length === 1) {
+                if (room.roles.X.id == socket.id) {
+                    handleGameOver(roomID, "O");
+                } else {
+                    handleGameOver(roomID, "X");
+                }
+            }
+
+            if (room.roles.X && room.roles.X.id === socket.id) {
+                room.roles.X = null;
+            } else if (room.roles.O && room.roles.O.id === socket.id) {
+                room.roles.O = null;
+            }
+        }
+
+        // Optionally clean up the room if it's empty
+        if (room.players.length === 0) {
+            delete rooms[roomID];
+            console.log(`Room ${roomID} deleted (no players left)`);
+        }
     }
 });
 

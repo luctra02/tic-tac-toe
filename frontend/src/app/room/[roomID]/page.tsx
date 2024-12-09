@@ -17,13 +17,12 @@ interface User {
     score: number;
 }
 
-interface Payload {
+interface Roles {
     winner: "X" | "O" | null; // Indicates the winning role or null for a draw
-    roles: {
-        X: User;
-        O: User;
-    };
+    X: User | null;
+    O: User | null;
 }
+
 export default function RoomPage({
     params,
 }: {
@@ -32,7 +31,8 @@ export default function RoomPage({
     const { roomID } = use(params);
     const router = useRouter();
     const { socket } = useSocketContext();
-    const [roomUsers, setRoomUsers] = useState<User[]>([]);
+    const [roomUsers, setRoomUsers] = useState<string[]>([]);
+    const [players, setPlayers] = useState<Roles | null>(null);
     const [hostScore, setHostScore] = useState<number>(0);
     const [playerScore, setPlayerScore] = useState<number>(0);
     const [gameStarted, setGameStarted] = useState(false);
@@ -40,28 +40,41 @@ export default function RoomPage({
     useEffect(() => {
         if (!socket) return;
 
-        socket.emit("getRoomUsers", roomID, (users: User[]) => {
+        socket.emit("getRoomUsers", roomID, (users: string[]) => {
             setRoomUsers(users);
         });
 
-        const handlePlayerJoined = (newUser: User) => {
+        const handlePlayerJoined = (newUser: string) => {
             setRoomUsers((prevUsers) => [...prevUsers, newUser]);
+            socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
+                setPlayers(roles);
+            });
         };
 
         const handlePlayerLeft = (userId: string) => {
             setRoomUsers((prevUsers) =>
-                prevUsers.filter((user) => user.id !== userId)
+                prevUsers.filter((user) => user !== userId)
             );
+            socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
+                setPlayers(roles);
+            });
         };
+
+        socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
+            setPlayers(roles);
+            setHostScore(players?.X?.score || 0);
+            setPlayerScore(players?.O?.score || 0);
+        });
 
         const handleGameStart = () => {
             setGameStarted(true);
         };
 
-        const handleGameOver = async ({ winner, roles }: Payload) => {
-            setHostScore(roles.X.score);
-            setPlayerScore(roles.O.score);
-            if (roles.X.uuid) {
+        const handleGameOver = async (roles: Roles) => {
+            console.log(roles);
+            setHostScore(roles.X?.score || 0);
+            setPlayerScore(roles.O?.score || 0);
+            if (roles.X?.uuid) {
                 const { data } = await supabase
                     .from("playerstats")
                     .select("total_matches")
@@ -75,7 +88,7 @@ export default function RoomPage({
                     .eq("id", roles.X.uuid);
             }
 
-            if (roles.O.uuid) {
+            if (roles.O?.uuid) {
                 const { data } = await supabase
                     .from("playerstats")
                     .select("total_matches")
@@ -88,7 +101,7 @@ export default function RoomPage({
                     .update({ total_matches: newTotalMatches })
                     .eq("id", roles.O.uuid);
             }
-            const winnerID = roles?.[winner as "X" | "O"]?.uuid;
+            const winnerID = roles?.[roles.winner as "X" | "O"]?.uuid;
             if (winnerID) {
                 const { data } = await supabase
                     .from("playerstats")
@@ -115,7 +128,7 @@ export default function RoomPage({
             socket.off("gameStarted", handleGameStart);
             socket.off("gameOver", handleGameOver);
         };
-    }, [socket, roomID, roomUsers]);
+    }, [socket, roomID, roomUsers, players?.X?.score, players?.O?.score]);
 
     const handleLeaveRoom = () => {
         socket?.emit("leaveRoom", roomID, () => {});
@@ -128,8 +141,8 @@ export default function RoomPage({
         }
     };
 
-    const host = roomUsers[0] || null;
-    const otherPlayer = roomUsers[1] || null;
+    const player1 = players?.X || null;
+    const player2 = players?.O || null;
 
     return (
         <div className="relative min-h-screen bg-gray-50">
@@ -146,22 +159,24 @@ export default function RoomPage({
 
             {/* Host - Top Left */}
             <div className="absolute top-6 left-6 flex flex-col items-center">
-                {host ? (
+                {player1 ? (
                     <div className="flex flex-row items-center space-x-4">
                         <div className="flex flex-col items-center text-center">
                             <Avatar className="w-20 h-20 mb-2">
                                 <AvatarImage
-                                    src={host.avatar_url || ""}
-                                    alt={host.full_name}
+                                    src={player1.avatar_url || ""}
+                                    alt={player1.full_name}
                                 />
                                 <AvatarFallback>
-                                    {host.full_name.charAt(0)}
+                                    {player1.full_name.charAt(0)}
                                 </AvatarFallback>
                             </Avatar>
                             <h2 className="text-lg font-medium">
-                                {host.full_name}
+                                {player1.full_name}
                             </h2>
-                            <span className="text-sm text-gray-500">Host</span>
+                            <span className="text-sm text-gray-500">
+                                Player 1
+                            </span>
                         </div>
                         {/* Host Score */}
                         <div className="text-center bg-blue-100 px-4 py-2 rounded-lg">
@@ -170,13 +185,13 @@ export default function RoomPage({
                         </div>
                     </div>
                 ) : (
-                    <p className="text-gray-500">Waiting for host...</p>
+                    <p className="text-gray-500">Waiting for player...</p>
                 )}
             </div>
 
             {/* Other Player - Top Right */}
             <div className="absolute top-6 right-6 flex flex-col items-center">
-                {otherPlayer ? (
+                {player2 ? (
                     <div className="flex flex-row items-center space-x-4">
                         {/* Player Score */}
                         <div className="text-center bg-blue-100 px-4 py-2 rounded-lg">
@@ -186,18 +201,18 @@ export default function RoomPage({
                         <div className="flex flex-col items-center text-center">
                             <Avatar className="w-20 h-20 mb-2">
                                 <AvatarImage
-                                    src={otherPlayer.avatar_url || ""}
-                                    alt={otherPlayer.full_name}
+                                    src={player2.avatar_url || ""}
+                                    alt={player2.full_name}
                                 />
                                 <AvatarFallback>
-                                    {otherPlayer.full_name.charAt(0)}
+                                    {player2.full_name.charAt(0)}
                                 </AvatarFallback>
                             </Avatar>
                             <h2 className="text-lg font-medium">
-                                {otherPlayer.full_name}
+                                {player2.full_name}
                             </h2>
                             <span className="text-sm text-gray-500">
-                                Player
+                                Player 2
                             </span>
                         </div>
                     </div>
@@ -221,7 +236,7 @@ export default function RoomPage({
             {/* Tic Tac Toe Game */}
             {gameStarted && (
                 <div className="flex items-center justify-center h-screen">
-                    <TicTacToe roomID={roomID} />
+                    <TicTacToe roomID={roomID} players={roomUsers.length} />
                 </div>
             )}
         </div>

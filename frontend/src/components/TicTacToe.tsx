@@ -17,9 +17,10 @@ interface Roles {
 
 interface TicTacToeProps {
     roomID: string;
+    players: number;
 }
 
-const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
+const TicTacToe: React.FC<TicTacToeProps> = ({ roomID, players }) => {
     const [board, setBoard] = useState<Cell[][]>(
         Array(3)
             .fill(null)
@@ -160,7 +161,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID }) => {
                     ))
                 )}
             </div>
-            {!gameStarted && (
+            {!gameStarted && players > 1 && (
                 <button
                     className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
                     onClick={resetGame}
