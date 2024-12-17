@@ -18,7 +18,7 @@ interface User {
 }
 
 interface Roles {
-    winner: "X" | "O" | null; // Indicates the winning role or null for a draw
+    winner: "X" | "O" | null;
     X: User | null;
     O: User | null;
 }
@@ -36,42 +36,67 @@ export default function RoomPage({
     const [hostScore, setHostScore] = useState<number>(0);
     const [playerScore, setPlayerScore] = useState<number>(0);
     const [gameStarted, setGameStarted] = useState(false);
+    const [roomStarted, setRoomStarted] = useState(false);
 
     useEffect(() => {
-        if (!socket) return;
-
-        socket.emit("getRoomUsers", roomID, (users: string[]) => {
-            setRoomUsers(users);
-        });
+        if (!socket) {
+            console.log("Socket not initialized");
+            return;
+        }
+        console.log(roomID);
+        socket.emit(
+            "getRoomInfo",
+            roomID,
+            ({
+                players,
+                roles,
+                roomStarted,
+            }: {
+                players: string[];
+                roles: Roles;
+                roomStarted: boolean;
+            }) => {
+                setRoomUsers(players);
+                setPlayers(roles);
+                setHostScore(roles?.X?.score || 0);
+                setPlayerScore(roles?.O?.score || 0);
+                setRoomStarted(roomStarted);
+            }
+        );
 
         const handlePlayerJoined = (newUser: string) => {
+            console.log("Joined");
             setRoomUsers((prevUsers) => [...prevUsers, newUser]);
-            socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
-                setPlayers(roles);
-            });
+            socket.emit(
+                "getRoomInfo",
+                roomID,
+                ({ roles }: { roles: Roles }) => {
+                    setPlayers(roles);
+                }
+            );
         };
 
         const handlePlayerLeft = (userId: string) => {
+            console.log("Left");
             setRoomUsers((prevUsers) =>
                 prevUsers.filter((user) => user !== userId)
             );
-            socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
-                setPlayers(roles);
-            });
+            socket.emit(
+                "getRoomInfo",
+                roomID,
+                ({ roles }: { roles: Roles }) => {
+                    setPlayers(roles);
+                }
+            );
         };
 
-        socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
-            setPlayers(roles);
-            setHostScore(players?.X?.score || 0);
-            setPlayerScore(players?.O?.score || 0);
-        });
-
         const handleGameStart = () => {
+            console.log("Started");
             setGameStarted(true);
         };
 
-        const handleGameOver = async (roles: Roles) => {
-            console.log(roles);
+        const handleGameOver = async ({ roles }: { roles: Roles }) => {
+            console.log("gameOver event received", roles);
             setHostScore(roles.X?.score || 0);
             setPlayerScore(roles.O?.score || 0);
             if (roles.X?.uuid) {
@@ -128,7 +153,7 @@ export default function RoomPage({
             socket.off("gameStarted", handleGameStart);
             socket.off("gameOver", handleGameOver);
         };
-    }, [socket, roomID, roomUsers, players?.X?.score, players?.O?.score]);
+    }, [roomID, socket]);
 
     const handleLeaveRoom = () => {
         socket?.emit("leaveRoom", roomID, () => {});
@@ -223,7 +248,7 @@ export default function RoomPage({
 
             {/* Start Game Button */}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
-                {roomUsers.length > 1 && !gameStarted && (
+                {roomUsers.length > 1 && !gameStarted && !roomStarted && (
                     <Button
                         onClick={handleStartGame}
                         className="bg-green-500 text-white hover:bg-green-600"
@@ -234,9 +259,13 @@ export default function RoomPage({
             </div>
 
             {/* Tic Tac Toe Game */}
-            {gameStarted && (
+            {(roomStarted || gameStarted) && players && (
                 <div className="flex items-center justify-center h-screen">
-                    <TicTacToe roomID={roomID} players={roomUsers.length} />
+                    <TicTacToe
+                        roomID={roomID}
+                        players={roomUsers.length}
+                        rolesData={players}
+                    />
                 </div>
             )}
         </div>
