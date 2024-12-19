@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
   if (res.data.user) {
     // Log the user information from the response
-    const { data: updatedUser, error } = await supabase.auth.admin.updateUserById(
+    await supabase.auth.admin.updateUserById(
       res.data.user.id, // User's ID
       {
         user_metadata: { email: data.email, full_name: data.username } // Replace with the metadata you want to update
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
   } else {
     console.error("User creation error:", res.error);
   }
+  
 
 
   if (res.data.properties?.email_otp) {
@@ -47,8 +48,9 @@ export async function POST(request: Request) {
     try {
       const info = await transporter.sendMail(mailOptions);
       return Response.json({ success: true, messageId: info.messageId });
-    } catch (error) {
-      return Response.json({ error: error.message });
+    } catch {
+      return Response.json({ error: "Error during user signup process" });
+
     }
   } else {
     return Response.json({ data: null, error: res.error });
