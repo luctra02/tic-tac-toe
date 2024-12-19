@@ -375,6 +375,8 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
                                                 email: form.getValues("email"),
                                                 password:
                                                     form.getValues("password"),
+                                                username:
+                                                    form.getValues("username"),
                                             });
 
                                             if (json.error) {
