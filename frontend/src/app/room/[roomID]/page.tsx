@@ -38,7 +38,6 @@ export default function RoomPage({
     const [hostScore, setHostScore] = useState<number>(0);
     const [playerScore, setPlayerScore] = useState<number>(0);
     const [gameStarted, setGameStarted] = useState(false);
-    const [roomStarted, setRoomStarted] = useState(false);
 
     useEffect(() => {
         if (!socket) return;
@@ -259,7 +258,7 @@ export default function RoomPage({
             </div>
 
             {/* Tic Tac Toe Game */}
-            {(roomStarted || gameStarted) && players && (
+            {(gameStarted) && players && (
                 <div className="flex items-center justify-center h-screen">
                     <TicTacToe roomID={roomID} players={roomLength} />
                 </div>
