@@ -7,6 +7,7 @@ import { useState, useEffect, use } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import TicTacToe from "@/components/TicTacToe";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+
 const supabase = createSupabaseBrowser();
 
 interface User {
@@ -33,6 +34,7 @@ export default function RoomPage({
     const { socket } = useSocketContext();
     const [roomUsers, setRoomUsers] = useState<string[]>([]);
     const [players, setPlayers] = useState<Roles | null>(null);
+    const [winner, setWinner] = useState<string | null>(null);
     const [hostScore, setHostScore] = useState<number>(0);
     const [playerScore, setPlayerScore] = useState<number>(0);
     const [gameStarted, setGameStarted] = useState(false);
@@ -40,38 +42,52 @@ export default function RoomPage({
     useEffect(() => {
         if (!socket) return;
 
-        socket.emit("getRoomUsers", roomID, (users: string[]) => {
-            setRoomUsers(users);
-        });
-
-        const handlePlayerJoined = (newUser: string) => {
-            setRoomUsers((prevUsers) => [...prevUsers, newUser]);
-            socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
+        socket.emit(
+            "getRoomInfo",
+            roomID,
+            ({
+                players,
+                winner,
+                roles,
+            }: {
+                players: string[];
+                winner: string;
+                roles: Roles;
+            }) => {
+                setRoomUsers(players);
                 setPlayers(roles);
-            });
-        };
-
-        const handlePlayerLeft = (userId: string) => {
-            setRoomUsers((prevUsers) =>
-                prevUsers.filter((user) => user !== userId)
+                setHostScore(roles?.X?.score || 0);
+                setPlayerScore(roles?.O?.score || 0);
+                setWinner(winner);
+            }
+        );
+        const handlePlayerJoined = () => {
+            socket.emit(
+                "getRoomInfo",
+                roomID,
+                ({ players, roles }: { players: string[]; roles: Roles }) => {
+                    setRoomUsers(players);
+                    setPlayers(roles);
+                }
             );
-            socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
-                setPlayers(roles);
-            });
         };
 
-        socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
-            setPlayers(roles);
-            setHostScore(players?.X?.score || 0);
-            setPlayerScore(players?.O?.score || 0);
-        });
+        const handlePlayerLeft = () => {
+            socket.emit(
+                "getRoomInfo",
+                roomID,
+                ({ players, roles }: { players: string[]; roles: Roles }) => {
+                    setRoomUsers(players);
+                    setPlayers(roles);
+                }
+            );
+        };
 
         const handleGameStart = () => {
             setGameStarted(true);
         };
 
         const handleGameOver = async (roles: Roles) => {
-            console.log(roles);
             setHostScore(roles.X?.score || 0);
             setPlayerScore(roles.O?.score || 0);
             if (roles.X?.uuid) {
@@ -128,11 +144,17 @@ export default function RoomPage({
             socket.off("gameStarted", handleGameStart);
             socket.off("gameOver", handleGameOver);
         };
-    }, [socket, roomID, roomUsers, players?.X?.score, players?.O?.score]);
+    }, [socket, roomID]);
+
+    useEffect(() => {
+        if (winner) {
+            setGameStarted(true);
+        }
+    }, [winner]);
 
     const handleLeaveRoom = () => {
-        socket?.emit("leaveRoom", roomID, () => {});
         router.push(`/`);
+        socket?.emit("leaveRoom", roomID, () => {});
     };
 
     const handleStartGame = () => {
@@ -143,6 +165,7 @@ export default function RoomPage({
 
     const player1 = players?.X || null;
     const player2 = players?.O || null;
+    const roomLength = roomUsers?.length || 0;
 
     return (
         <div className="relative min-h-screen bg-gray-50">
@@ -223,7 +246,7 @@ export default function RoomPage({
 
             {/* Start Game Button */}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
-                {roomUsers.length > 1 && !gameStarted && (
+                {roomLength > 1 && !gameStarted && (
                     <Button
                         onClick={handleStartGame}
                         className="bg-green-500 text-white hover:bg-green-600"
@@ -236,7 +259,7 @@ export default function RoomPage({
             {/* Tic Tac Toe Game */}
             {gameStarted && (
                 <div className="flex items-center justify-center h-screen">
-                    <TicTacToe roomID={roomID} players={roomUsers.length} />
+                    <TicTacToe roomID={roomID} players={roomLength} />
                 </div>
             )}
         </div>

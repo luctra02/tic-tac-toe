@@ -100,21 +100,17 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("getRoomUsers", (roomID, callback) => {
+    socket.on("getRoomInfo", (roomID, callback) => {
         const room = rooms[roomID];
         if (room) {
-            // Return the list of players in the room
-            callback(room.players);
-        } else {
-            callback([]);
-        }
-    });
-
-    socket.on("getRoomRoles", (roomID, callback) => {
-        const room = rooms[roomID];
-        if (room) {
-            // Return the list of players in the room
-            callback(room.roles);
+            callback({
+                players: room.players,
+                roles: room.roles,
+                isXNext: room.isXNext,
+                board: room.board,
+                winner: room.winner,
+                gameStarted: room.gameStarted,
+            });
         } else {
             callback([]);
         }

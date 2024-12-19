@@ -42,13 +42,29 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID, players }) => {
     useEffect(() => {
         if (!socket) return;
 
-        socket.emit("getRoomRoles", roomID, (roles: Roles | null) => {
-            if (roles) {
+        socket.emit(
+            "getRoomInfo",
+            roomID,
+            ({
+                isXNext,
+                board,
+                winner,
+                roles,
+                gameStarted,
+            }: {
+                isXNext: boolean;
+                board: Cell[][];
+                winner: string;
+                roles: Roles;
+                gameStarted: boolean;
+            }) => {
+                setIsXNext(isXNext);
+                setBoard(board);
+                setWinner(winner);
                 setRoles(roles);
-            } else {
-                console.log("Room not found");
+                setGameStarted(gameStarted);
             }
-        });
+        );
 
         socket.on(
             "gameUpdate",
