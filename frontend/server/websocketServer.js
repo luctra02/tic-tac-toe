@@ -31,6 +31,7 @@ io.on("connection", (socket) => {
                 isXNext: true, // Player X starts
                 winner: null,
                 gameStarted: false,
+                roomStarted: false,
             };
 
             rooms[roomID].players.push({ id: socket.id });
@@ -120,6 +121,7 @@ io.on("connection", (socket) => {
         const room = rooms[roomID];
         if (room && room.players.length === 2) {
             room.gameStarted = true;
+            room.roomStarted = true;
             io.to(roomID).emit("gameStarted");
             console.log(`Game started in room ${roomID}`);
         } else {
@@ -219,6 +221,7 @@ io.on("connection", (socket) => {
                 isXNext: rooms[roomID].isXNext,
                 winner: null,
                 gameStarted: true,
+                roomStarted: true,
             };
 
             // Emit the reset event to the client to clear the board and start a new game
@@ -295,6 +298,9 @@ io.on("connection", (socket) => {
             X: room.roles.X,
             O: room.roles.O,
         });
+        console.log(
+            `Emitting gameOver to room ${roomID} with winner: ${winner}`
+        );
     }
 
     function handleDisconnect(room, roomID) {

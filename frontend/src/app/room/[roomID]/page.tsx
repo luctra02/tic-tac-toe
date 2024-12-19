@@ -19,7 +19,7 @@ interface User {
 }
 
 interface Roles {
-    winner: "X" | "O" | null; // Indicates the winning role or null for a draw
+    winner: "X" | "O" | null;
     X: User | null;
     O: User | null;
 }
@@ -38,6 +38,7 @@ export default function RoomPage({
     const [hostScore, setHostScore] = useState<number>(0);
     const [playerScore, setPlayerScore] = useState<number>(0);
     const [gameStarted, setGameStarted] = useState(false);
+    const [roomStarted, setRoomStarted] = useState(false);
 
     useEffect(() => {
         if (!socket) return;
@@ -84,6 +85,7 @@ export default function RoomPage({
         };
 
         const handleGameStart = () => {
+            console.log("Started");
             setGameStarted(true);
         };
 
@@ -257,7 +259,7 @@ export default function RoomPage({
             </div>
 
             {/* Tic Tac Toe Game */}
-            {gameStarted && (
+            {(roomStarted || gameStarted) && players && (
                 <div className="flex items-center justify-center h-screen">
                     <TicTacToe roomID={roomID} players={roomLength} />
                 </div>

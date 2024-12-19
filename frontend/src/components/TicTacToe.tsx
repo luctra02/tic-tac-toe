@@ -18,9 +18,14 @@ interface Roles {
 interface TicTacToeProps {
     roomID: string;
     players: number;
+    rolesData: Roles;
 }
 
-const TicTacToe: React.FC<TicTacToeProps> = ({ roomID, players }) => {
+const TicTacToe: React.FC<TicTacToeProps> = ({
+    roomID,
+    players,
+    rolesData,
+}) => {
     const [board, setBoard] = useState<Cell[][]>(
         Array(3)
             .fill(null)
@@ -40,7 +45,10 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID, players }) => {
     >([]);
 
     useEffect(() => {
-        if (!socket) return;
+        if (!socket) {
+            console.log("Socket not initialized");
+            return;
+        }
 
         socket.emit(
             "getRoomInfo",
@@ -101,6 +109,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID, players }) => {
         );
 
         socket.on("gameOver", ({ winner }: { winner: string | null }) => {
+            console.log("HER ER VINNER");
             setWinner(winner);
             setGameStarted(false);
         });
@@ -110,7 +119,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomID, players }) => {
             socket.off("gameReset");
             socket.off("gameOver");
         };
-    }, [roomID, socket]);
+    }, [gameStarted, rolesData, roomID, socket]);
 
     const handleMove = (row: number, col: number) => {
         if (board[row][col] || winner) return;
