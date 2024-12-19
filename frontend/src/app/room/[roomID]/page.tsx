@@ -247,7 +247,7 @@ export default function RoomPage({
 
             {/* Start Game Button */}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
-                {roomLength > 1 && !gameStarted && (
+                {roomLength > 1 && !gameStarted && !winner &&(
                     <Button
                         onClick={handleStartGame}
                         className="bg-green-500 text-white hover:bg-green-600"
@@ -258,7 +258,7 @@ export default function RoomPage({
             </div>
 
             {/* Tic Tac Toe Game */}
-            {(gameStarted) && players && (
+            {(gameStarted || winner) && players && (
                 <div className="flex items-center justify-center h-screen">
                     <TicTacToe roomID={roomID} players={roomLength} />
                 </div>
