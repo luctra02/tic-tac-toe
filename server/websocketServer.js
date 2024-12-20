@@ -6,7 +6,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000", // Allow requests from your frontend
+        origin: "websocketserver-production-5f0d.up.railway.app", // Allow requests from your frontend
         methods: ["GET", "POST"],
         credentials: true, // Allow credentials
     },
@@ -335,7 +335,7 @@ io.on("connection", (socket) => {
     }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

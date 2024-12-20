@@ -13,7 +13,7 @@ interface SocketContextType {
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
-    const { socket, playersOnline } = useSocket("http://localhost:3001");
+    const { socket, playersOnline } = useSocket("websocketserver-production-5f0d.up.railway.app");
 
     return (
         <SocketContext.Provider value={{ socket, playersOnline }}>

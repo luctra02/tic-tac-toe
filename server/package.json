@@ -4,7 +4,7 @@
   "main": "websocketServer.js",
   "type": "module",
   "scripts": {
-    "ws": "nodemon websocketServer.mjs"
+    "ws": "node websocketServer.js"
   },
   "keywords": [],
   "author": "",
