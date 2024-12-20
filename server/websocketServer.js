@@ -6,7 +6,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "websocketserver-production-5f0d.up.railway.app", // Allow requests from your frontend
+        origin: "tic-tac-toe-omega-liart.vercel.app", // Allow requests from your frontend
         methods: ["GET", "POST"],
         credentials: true, // Allow credentials
     },
