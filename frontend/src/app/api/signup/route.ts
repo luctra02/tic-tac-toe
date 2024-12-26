@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const htmlContent = generateVerifyEmailTemplate(res.data.properties.email_otp);
 
     const mailOptions = {
-      from: `Acme <${process.env.GMAIL_USER}>`,
+      from: `Mr.TicTacToe <${process.env.GMAIL_USER}>`,
       to: data.email,
       subject: "Verify Email",
       html: htmlContent,
