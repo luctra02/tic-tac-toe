@@ -54,40 +54,36 @@ io.on("connection", (socket) => {
     // Handle joining a room
     socket.on("joinRoom", ({ roomID, userProfile }, callback) => {
         const room = rooms[roomID];
-
         if (room) {
-            if (room.players.length < 2) {
-                // Add the player to the room's players list with their profile information
-                if (!room.roles["O"]) {
-                    room.players.push({ id: socket.id });
-                    room.roles["O"] = {
-                        id: socket.id,
-                        full_name: userProfile.full_name,
-                        avatar_url: userProfile.avatar_url,
-                        uuid: userProfile.uuid,
-                        score: 0,
-                    };
-                } else {
-                    room.players.push({ id: socket.id });
-                    room.roles["X"] = {
-                        id: socket.id,
-                        full_name: userProfile.full_name,
-                        avatar_url: userProfile.avatar_url,
-                        uuid: userProfile.uuid,
-                        score: 0,
-                    };
-                }
-                socket.currentRoom = roomID; // Store the room ID in the socket object
-                socket.join(roomID);
-                callback(); // Notify the client of success
-                io.to(roomID).emit("playerJoined", {
+            // Add the player to the room's players list with their profile information
+            if (!room.roles["O"]) {
+                room.players.push({ id: socket.id });
+                room.roles["O"] = {
                     id: socket.id,
-                    ...userProfile,
-                });
-                console.log(`Player ${socket.id} joined room ${roomID}`);
-            } else {
-                callback("Room is full");
+                    full_name: userProfile.full_name,
+                    avatar_url: userProfile.avatar_url,
+                    uuid: userProfile.uuid,
+                    score: 0,
+                };
             }
+            if (!room.roles["X"]) {
+                room.players.push({ id: socket.id });
+                room.roles["X"] = {
+                    id: socket.id,
+                    full_name: userProfile.full_name,
+                    avatar_url: userProfile.avatar_url,
+                    uuid: userProfile.uuid,
+                    score: 0,
+                };
+            }
+            socket.currentRoom = roomID; // Store the room ID in the socket object
+            socket.join(roomID);
+            callback(); // Notify the client of success
+            io.to(roomID).emit("playerJoined", {
+                id: socket.id,
+                ...userProfile,
+            });
+            console.log(`Player ${socket.id} joined room ${roomID}`);
         } else {
             callback("Room does not exist");
         }

@@ -3,10 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useSocketContext } from "@/components/SocketProvider";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use} from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import TicTacToe from "@/components/TicTacToe";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import useUser from "@/app/hooks/useUser";
+import { toast } from "sonner";
 
 const supabase = createSupabaseBrowser();
 
@@ -38,6 +40,10 @@ export default function RoomPage({
     const [hostScore, setHostScore] = useState<number>(0);
     const [playerScore, setPlayerScore] = useState<number>(0);
     const [gameStarted, setGameStarted] = useState(false);
+    const { data } = useUser();
+
+    
+    
 
     useEffect(() => {
         if (!socket) return;
@@ -258,7 +264,7 @@ export default function RoomPage({
             </div>
 
             {/* Tic Tac Toe Game */}
-            {(gameStarted) && players && (
+            {gameStarted && players && (
                 <div className="flex items-center justify-center h-screen">
                     <TicTacToe roomID={roomID} players={roomLength} />
                 </div>

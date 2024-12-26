@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useSocketContext } from "@/components/SocketProvider";
 import useUser from "@/app/hooks/useUser";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface statsData {
     wins: number;
@@ -64,14 +65,14 @@ export default function Home() {
                 { roomID: roomID, userProfile },
                 (error: string | undefined) => {
                     if (error) {
-                        alert(error);
+                        toast.error(error);
                     } else {
                         router.push(`/room/${roomID}`);
                     }
                 }
             );
         } else {
-            alert("Please enter a room ID.");
+            toast.error("Please enter a room ID.");
         }
     };
 
