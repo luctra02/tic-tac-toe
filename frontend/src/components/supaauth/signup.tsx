@@ -340,7 +340,7 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
                                     setVerifyStatus("failed");
                                 } else {
                                     setVerifyStatus("success");
-                                    router.push(redirectTo);
+                                    window.location.href = redirectTo;
                                 }
                             }
                         }}
