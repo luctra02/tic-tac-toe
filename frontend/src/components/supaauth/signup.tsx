@@ -75,7 +75,7 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
-            email: "",
+            email: existEmail || "",
             password: "",
             "confirm-pass": "",
         },
@@ -115,7 +115,7 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
                     "?verify=true&email=" +
                     form.getValues("email")
             );
-            setIsConfirmed(true);
+            setIsConfirmed(true); // Ensure isConfirmed remains true
         } else {
             if (json.error.code) {
                 toast.error(json.error.code);
@@ -364,55 +364,69 @@ export default function SignUp({ redirectTo }: { redirectTo: string }) {
                         </InputOTPGroup>
                     </InputOTP>
                     <div className="text-sm flex gap-2">
-                        <p>{"Didn't work?"} </p>
-                        <span
-                            className="text-blue-400 cursor-pointer hover:underline transition-all flex items-center gap-2 "
+                        <p>{"Didn't work?"}</p>
+                        <button
+                            type="button"
+                            className="text-blue-400 cursor-pointer hover:underline transition-all flex items-center gap-2 disabled:opacity-50"
+                            disabled={isSendAgain}
                             onClick={async () => {
-                                if (!isSendAgain) {
-                                    startSendAgain(async () => {
-                                        if (!form.getValues("password")) {
+                                if (isSendAgain) return;
+
+                                startSendAgain(async () => {
+                                    const email = form.getValues("email");
+                                    const password = form
+                                        .getValues("password")
+                                        ?.trim();
+                                    const username = form.getValues("username");
+
+                                    try {
+                                        // Only proceed if email and username are present
+                                        if (!email || !username) {
+                                            toast.error(
+                                                "Missing email or username."
+                                            );
+                                            return;
+                                        }
+
+                                        // If password is empty, user already submitted and now wants to resend
+                                        if (!password) {
                                             const json = await postEmail({
-                                                email: form.getValues("email"),
-                                                password:
-                                                    form.getValues("password"),
-                                                username:
-                                                    form.getValues("username"),
+                                                email,
+                                                password,
+                                                username,
                                             });
 
-                                            if (json.error) {
+                                            if (json?.error) {
                                                 toast.error(
-                                                    "Fail to resend email"
+                                                    "Failed to resend email"
                                                 );
                                             } else {
                                                 toast.success(
                                                     "Please check your email."
                                                 );
+                                                // Keep isConfirmed true
                                             }
-                                        } else {
-                                            router.replace(
-                                                pathname || "/register"
-                                            );
-                                            form.setValue(
-                                                "email",
-                                                existEmail || ""
-                                            );
-                                            form.setValue("password", "");
-                                            setIsConfirmed(false);
+                                            return;
                                         }
-                                    });
-                                }
+
+                                        form.setValue("password", "");
+                                        // Keep isConfirmed as true here
+                                    } catch (error) {
+                                        console.error(error);
+                                        toast.error(
+                                            "Something went wrong. Try again."
+                                        );
+                                    }
+                                });
                             }}
                         >
-                            <AiOutlineLoading3Quarters
-                                className={`${
-                                    !isSendAgain
-                                        ? "hidden"
-                                        : "block animate-spin"
-                                }`}
-                            />
-                            Send me another code.
-                        </span>
+                            {isSendAgain && (
+                                <AiOutlineLoading3Quarters className="animate-spin" />
+                            )}
+                            Send me another code
+                        </button>
                     </div>
+
                     <Button
                         type="submit"
                         className="w-full h-8 bg-indigo-500 hover:bg-indigo-600 transition-all text-white flex items-center gap-2"
